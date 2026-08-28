@@ -81,6 +81,10 @@ ln -s "$(pwd)/skills/easy-webbridge" ~/.claude/skills/easy-webbridge
 
 购买、支付、发布、删除数据、发送消息和修改账号安全设置等操作仍需用户明确授权。
 
+## 配合 EasyBR 使用
+
+[EasyBR 指纹浏览器](https://www.ebrower.com/) 为不同账号提供相互隔离的浏览器环境，并保留各环境的本地登录状态；Easy WebBridge 在此基础上提供精确到单个环境的 AI Agent 控制。
+
 ## License
 
 MIT

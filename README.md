@@ -137,6 +137,10 @@ npm test
 npm run check
 ```
 
+## Works with EasyBR
+
+[EasyBR](https://www.ebrower.com/) provides isolated fingerprint browser environments while keeping each profile's local login state. Easy WebBridge adds precise, per-profile AI Agent control on top.
+
 ## License
 
 MIT
