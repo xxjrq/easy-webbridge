@@ -1,0 +1,31 @@
+{
+  "name": "agent-browser-bridge",
+  "version": "0.1.0",
+  "description": "Open local bridge for AI agents to control multiple Chromium browser profiles.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "agent-browser": "./cli/agent-browser.mjs"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "test": "node --test",
+    "check": "node --check src/server.mjs && node --check extension/service-worker.js && node --check extension/popup.js && node --check extension/options.js && npm test"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "keywords": [
+    "agent",
+    "browser-automation",
+    "chrome-extension",
+    "codex",
+    "claude-code",
+    "skill"
+  ]
+}

@@ -1,0 +1,9 @@
+:root { color-scheme: light dark; font-family: Inter, system-ui, sans-serif; }
+body { width: 300px; margin: 0; background: #0b1220; color: #f8fafc; }
+header { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid #263247; }
+#dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; }
+main { padding: 18px; }
+.name { font-size: 20px; font-weight: 750; }
+.id { margin-top: 6px; color: #94a3b8; font: 11px ui-monospace, monospace; word-break: break-all; }
+.status { margin: 18px 0; padding: 10px 12px; border-radius: 6px; background: #172033; color: #cbd5e1; }
+button { width: 100%; border: 0; border-radius: 6px; padding: 11px; background: #2563eb; color: white; font-weight: 700; cursor: pointer; }

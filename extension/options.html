@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Agent Browser Bridge Settings</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">AGENT BROWSER BRIDGE</p>
+      <h1>Browser identity</h1>
+      <p class="lead">Each browser profile has its own ID, name and color. Agents route commands using this identity.</p>
+      <form id="form">
+        <label>Display name<input id="displayName" required placeholder="Work browser A"></label>
+        <label>Identity color<input id="color" type="color" value="#2563eb"></label>
+        <label>Bridge WebSocket URL<input id="endpoint" required value="ws://127.0.0.1:17777/extension"></label>
+        <label>Bridge token<input id="token" type="password" required autocomplete="off"></label>
+        <label>Browser ID<input id="browserId" readonly></label>
+        <button type="submit">Save and reconnect</button>
+        <span id="message"></span>
+      </form>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
