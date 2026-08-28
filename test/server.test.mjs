@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import WebSocket from "ws";
@@ -98,6 +98,41 @@ test("pairs local browser extensions without manual token entry", async () => {
     });
     assert.equal(rejectedResponse.status, 403);
   } finally {
+    await bridge.close();
+    await rm(dataDir, { recursive: true, force: true });
+  }
+});
+
+test("persists screenshots and PDFs returned by an extension", async () => {
+  const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
+  const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });
+  const url = `http://${bridge.host}:${bridge.port}`;
+  const socket = await connectExtension(url, bridge.token, { browserId: "browser-files" }, (client, message) => {
+    const isPdf = message.action === "save_as_pdf";
+    const mime = isPdf ? "application/pdf" : "image/png";
+    const data = Buffer.from(isPdf ? "%PDF-test" : "png-test").toString("base64");
+    client.send(JSON.stringify({
+      type: "result",
+      commandId: message.commandId,
+      ok: true,
+      result: { dataUrl: `data:${mime};base64,${data}` },
+    }));
+  });
+
+  try {
+    for (const action of ["screenshot", "save_as_pdf"]) {
+      const response = await fetch(`${url}/v1/browsers/browser-files/commands`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${bridge.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action, args: {} }),
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.result.path.endsWith(action === "save_as_pdf" ? ".pdf" : ".png"), true);
+      assert.equal((await readFile(payload.result.path)).length > 0, true);
+    }
+  } finally {
+    socket.close();
     await bridge.close();
     await rm(dataDir, { recursive: true, force: true });
   }

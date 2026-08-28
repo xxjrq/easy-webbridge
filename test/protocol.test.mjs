@@ -13,6 +13,9 @@ test("normalizes supported high-permission commands", () => {
     args: {},
     timeoutMs: 15_000,
   });
+  for (const action of ["find_tab", "close_session", "network", "save_as_pdf"]) {
+    assert.equal(normalizeCommand({ action }).action, action);
+  }
 });
 
 test("rejects unsupported actions and invalid timeouts", () => {

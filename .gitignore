@@ -2,4 +2,6 @@ node_modules/
 .data/
 coverage/
 *.log
+*.crx
+*.pem
 .DS_Store

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const baseUrl = process.env.EASY_WEBBRIDGE_URL || "http://127.0.0.1:17777";
 
@@ -24,9 +26,33 @@ async function request(path, init = {}) {
   return body;
 }
 
+async function health() {
+  try {
+    const response = await fetch(`${baseUrl}/health`);
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function startBridge() {
+  const running = await health();
+  if (running) return { ...running, started: false, url: baseUrl };
+  const serverPath = fileURLToPath(new URL("../src/server.mjs", import.meta.url));
+  spawn(process.execPath, [serverPath], { detached: true, stdio: "ignore" }).unref();
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const ready = await health();
+    if (ready) return { ...ready, started: true, url: baseUrl };
+  }
+  throw new Error("Easy WebBridge did not become ready");
+}
+
 function usage() {
   console.error(`Usage:
   easy-webbridge list
+  easy-webbridge start
+  easy-webbridge status
   easy-webbridge command <browserId> <action> [args-json]
   easy-webbridge navigate <browserId> <url> [--new-tab]
   easy-webbridge snapshot <browserId> [tabId]
@@ -47,6 +73,10 @@ async function main() {
   let result;
   if (verb === "list") {
     result = await request("/v1/browsers");
+  } else if (verb === "start") {
+    result = await startBridge();
+  } else if (verb === "status") {
+    result = await health() || { ok: false, service: "easy-webbridge", online: false, url: baseUrl };
   } else if (verb === "command") {
     const [browserId, action, argsJson = "{}"] = args;
     if (!browserId || !action) throw new Error("browserId and action are required");

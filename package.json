@@ -1,6 +1,6 @@
 {
   "name": "easy-webbridge",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Open local WebBridge for AI agents to control multiple Chromium browser profiles.",
   "type": "module",
   "private": false,
@@ -15,7 +15,7 @@
     "start": "node src/server.mjs",
     "dev": "node --watch src/server.mjs",
     "test": "node --test",
-    "check": "node --check src/server.mjs && node --check extension/identity.js && node --check extension/service-worker.js && node --check extension/popup.js && node --check extension/options.js && npm test"
+    "check": "node --check src/server.mjs && node --check cli/easy-webbridge.mjs && node --check skills/easy-webbridge/scripts/easy-webbridge.mjs && node --check extension/identity.js && node --check extension/service-worker.js && node --check extension/popup.js && node --check extension/options.js && npm test"
   },
   "dependencies": {
     "ws": "^8.18.3"

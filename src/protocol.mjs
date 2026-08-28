@@ -1,7 +1,9 @@
 export const COMMANDS = new Set([
   "list_tabs",
+  "find_tab",
   "activate_tab",
   "close_tab",
+  "close_session",
   "navigate",
   "snapshot",
   "click",
@@ -16,6 +18,8 @@ export const COMMANDS = new Set([
   "remove_cookie",
   "download",
   "reload_extension",
+  "network",
+  "save_as_pdf",
 ]);
 
 export function normalizeCommand(body = {}) {

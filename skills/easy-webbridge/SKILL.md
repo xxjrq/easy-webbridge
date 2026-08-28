@@ -9,13 +9,13 @@ Use the bundled CLI to control browser profiles connected to the local bridge. R
 
 ## Connect
 
-1. Check the bridge:
+1. Start or check the bridge:
 
 ```bash
-curl -s http://127.0.0.1:17777/health
+node scripts/easy-webbridge.mjs start
 ```
 
-2. If unavailable, start the `easy-webbridge` project with `npm start`. Do not expose its port beyond `127.0.0.1`.
+2. `start` is idempotent: it starts the local service only when unavailable. Do not expose its port beyond `127.0.0.1`.
 3. Run the bundled script from this skill directory:
 
 ```bash
@@ -71,13 +71,17 @@ node scripts/easy-webbridge.mjs command <browserId> <action> '<args-json>'
 
 Supported actions include:
 
-- `activate_tab`, `close_tab`, `navigate`, `scroll`
+- `activate_tab`, `close_tab`, `navigate`, `find_tab`, `close_session`, `scroll`
 - `evaluate` with `code` and optional `world` (`MAIN` by default)
 - `cdp` with `method`, `params`, and optional `tabId`
 - `upload` with a file-input CSS `selector` and absolute `files`
 - `get_cookies`, `set_cookie`, `remove_cookie`
 - `download` with Chrome download options
 - `reload_extension` to reload Easy WebBridge in the selected browser profile
+- `network` with `start`, `stop`, `list` and `detail`
+- `save_as_pdf` to render a page to a local PDF file
+
+For task-scoped tabs, pass `session` and optional `groupTitle` in command args. The extension groups tabs with the same session name. It operates in the existing browser profile, so the user's current login state remains available.
 
 For full payload shapes, read [references/api.md](references/api.md).
 

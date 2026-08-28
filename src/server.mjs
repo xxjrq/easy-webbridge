@@ -53,18 +53,20 @@ function bearerToken(request) {
   return header.startsWith("Bearer ") ? header.slice(7) : "";
 }
 
-async function persistScreenshot(result, dataDir, browserId) {
-  if (!result?.dataUrl || !String(result.dataUrl).startsWith("data:image/")) return result;
-  const match = String(result.dataUrl).match(/^data:image\/(png|jpeg);base64,(.+)$/s);
-  if (!match) throw new Error("Unsupported screenshot encoding");
-  const extension = match[1] === "jpeg" ? "jpg" : "png";
-  const screenshotDir = join(dataDir, "screenshots");
-  await mkdir(screenshotDir, { recursive: true });
-  const filename = `${browserId}-${Date.now()}.${extension}`;
-  const outputPath = join(screenshotDir, filename);
-  await writeFile(outputPath, Buffer.from(match[2], "base64"), { mode: 0o600 });
+async function persistArtifact(result, dataDir, browserId, action) {
+  if (!result?.dataUrl) return result;
+  const match = String(result.dataUrl).match(/^data:(image\/(png|jpeg)|application\/pdf);base64,(.+)$/s);
+  if (!match) throw new Error("Unsupported artifact encoding");
+  const extension = match[1] === "application/pdf" ? "pdf" : match[2] === "jpeg" ? "jpg" : "png";
+  const outputDir = join(dataDir, extension === "pdf" ? "pdf" : "screenshots");
+  await mkdir(outputDir, { recursive: true });
+  const filename = `${browserId}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`;
+  const outputPath = join(outputDir, filename);
+  const bytes = Buffer.from(match[3], "base64");
+  if (bytes.length > 100 * 1024 * 1024) throw new Error(`${action} output exceeds 100 MB`);
+  await writeFile(outputPath, bytes, { mode: 0o600 });
   const { dataUrl: _dataUrl, ...rest } = result;
-  return { ...rest, path: outputPath };
+  return { ...rest, path: outputPath, sizeBytes: bytes.length, mimeType: extension === "pdf" ? "application/pdf" : `image/${match[2]}` };
 }
 
 export async function createBridgeServer(options = {}) {
@@ -105,8 +107,8 @@ export async function createBridgeServer(options = {}) {
         const browserId = decodeURIComponent(commandMatch[1]);
         const command = normalizeCommand(await readJson(request));
         const rawResult = await registry.command(browserId, command.action, command.args, command.timeoutMs);
-        const result = command.action === "screenshot"
-          ? await persistScreenshot(rawResult, dataDir, browserId)
+        const result = ["screenshot", "save_as_pdf"].includes(command.action)
+          ? await persistArtifact(rawResult, dataDir, browserId, command.action)
           : rawResult;
         return json(response, 200, { ok: true, browserId, action: command.action, result });
       }
@@ -118,7 +120,7 @@ export async function createBridgeServer(options = {}) {
     }
   });
 
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 20 * 1024 * 1024 });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 150 * 1024 * 1024 });
 
   server.on("upgrade", (request, socket, head) => {
     const url = new URL(request.url || "/", `http://${request.headers.host || `${host}:${port}`}`);
