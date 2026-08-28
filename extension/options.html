@@ -1,26 +1,144 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Easy WebBridge Settings</title>
+    <title>Easy WebBridge 设置</title>
     <link rel="stylesheet" href="options.css">
   </head>
   <body>
-    <main>
-      <p class="eyebrow">EASY WEBBRIDGE</p>
-      <h1>Browser identity</h1>
-      <p class="lead">Each browser profile has its own ID, name and color. Agents route commands using this identity.</p>
-      <form id="form">
-        <label>Display name<input id="displayName" required placeholder="Work browser A"></label>
-        <label>Identity color<input id="color" type="color" value="#2563eb"></label>
-        <label>Bridge WebSocket URL<input id="endpoint" required value="ws://127.0.0.1:17777/extension"></label>
-        <label>Bridge token<input id="token" type="password" required autocomplete="off"></label>
-        <label>Browser ID<input id="browserId" readonly></label>
-        <button type="submit">Save and reconnect</button>
-        <span id="message"></span>
-      </form>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#main" aria-label="Easy WebBridge 设置首页">
+          <img src="icons/icon-48.png" width="36" height="36" alt="">
+          <span><strong>Easy WebBridge</strong><small>浏览器连接设置</small></span>
+        </a>
+        <div class="header-status" id="headerStatus" aria-live="polite">
+          <span class="status-dot"></span>
+          <span id="headerStatusText">正在检查</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="intro">
+        <p class="eyebrow">LOCAL AGENT BRIDGE</p>
+        <h1>连接当前浏览器</h1>
+        <p>完成一次设置后，Codex、Claude Code 等本地 Agent 就能通过独立身份控制这个浏览器。</p>
+      </section>
+
+      <ol class="steps" aria-label="配置步骤">
+        <li><span>1</span><div><strong>启动 Bridge</strong><small>在项目目录运行本地服务</small></div></li>
+        <li><span>2</span><div><strong>填写令牌</strong><small>令牌仅保存在本机</small></div></li>
+        <li><span>3</span><div><strong>保存连接</strong><small>确认状态显示在线</small></div></li>
+      </ol>
+
+      <div class="layout">
+        <form id="form" novalidate>
+          <section class="panel" aria-labelledby="connectionTitle">
+            <div class="panel-heading">
+              <div class="heading-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M8 12h8M12 8v8"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+              </div>
+              <div><h2 id="connectionTitle">本地连接</h2><p>服务只监听 127.0.0.1，不会开放到局域网。</p></div>
+            </div>
+
+            <div class="field">
+              <label for="endpoint">Bridge 地址</label>
+              <div class="input-action">
+                <input id="endpoint" name="endpoint" required spellcheck="false" value="ws://127.0.0.1:17777/extension" aria-describedby="endpointHelp endpointError">
+                <button class="secondary-button" id="testService" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>
+                  <span>检测服务</span>
+                </button>
+              </div>
+              <p class="help" id="endpointHelp">默认地址通常无需修改。</p>
+              <p class="field-error" id="endpointError"></p>
+            </div>
+
+            <div class="field">
+              <label for="token">访问令牌</label>
+              <div class="password-field">
+                <input id="token" name="token" type="password" required autocomplete="new-password" placeholder="粘贴 bridge-token 中的令牌" aria-describedby="tokenHelp tokenError">
+                <button class="input-icon-button" id="toggleToken" type="button" aria-label="显示访问令牌" aria-pressed="false" title="显示令牌">
+                  <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.1 3.2M6.6 6.6C3.6 8.6 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.1-.9"/></svg>
+                </button>
+              </div>
+              <div class="help-row" id="tokenHelp">
+                <span>令牌保存在 <code>~/.easy-webbridge/bridge-token</code></span>
+                <button class="link-button" id="copyTokenCommand" type="button">复制获取命令</button>
+              </div>
+              <p class="field-error" id="tokenError"></p>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="identityTitle">
+            <div class="panel-heading">
+              <div class="heading-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              </div>
+              <div><h2 id="identityTitle">浏览器身份</h2><p>每个浏览器或 Profile 使用独立名称、颜色和 ID。</p></div>
+            </div>
+
+            <div class="field">
+              <label for="displayName">显示名称</label>
+              <input id="displayName" name="displayName" required maxlength="48" placeholder="例如：运营浏览器 A" aria-describedby="nameHelp nameError">
+              <p class="help" id="nameHelp">名称会显示在 Agent 的浏览器列表中。</p>
+              <p class="field-error" id="nameError"></p>
+            </div>
+
+            <fieldset class="field color-field">
+              <legend>身份颜色</legend>
+              <div class="swatches" id="swatches" role="radiogroup" aria-label="身份颜色">
+                <button type="button" class="swatch" data-color="#2563eb" style="--swatch:#2563eb" role="radio" aria-label="蓝色"></button>
+                <button type="button" class="swatch" data-color="#0f766e" style="--swatch:#0f766e" role="radio" aria-label="青绿色"></button>
+                <button type="button" class="swatch" data-color="#7c3aed" style="--swatch:#7c3aed" role="radio" aria-label="紫色"></button>
+                <button type="button" class="swatch" data-color="#c2410c" style="--swatch:#c2410c" role="radio" aria-label="橙色"></button>
+                <button type="button" class="swatch" data-color="#be123c" style="--swatch:#be123c" role="radio" aria-label="红色"></button>
+                <button type="button" class="swatch" data-color="#334155" style="--swatch:#334155" role="radio" aria-label="深灰色"></button>
+              </div>
+              <input id="color" name="color" type="hidden" value="#2563eb">
+            </fieldset>
+
+            <div class="field">
+              <label for="browserId">浏览器 ID</label>
+              <div class="input-action">
+                <input id="browserId" name="browserId" readonly aria-describedby="browserIdHelp">
+                <button class="secondary-button" id="copyBrowserId" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>复制 ID</span>
+                </button>
+              </div>
+              <p class="help" id="browserIdHelp">此 ID 自动生成且保持稳定，用于精确路由 Agent 指令。</p>
+            </div>
+          </section>
+
+          <div class="submit-bar">
+            <div class="form-message" id="message" role="status" aria-live="polite"></div>
+            <button class="primary-button" id="saveButton" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>保存并连接</span>
+            </button>
+          </div>
+        </form>
+
+        <aside class="sidebar" aria-label="启动帮助">
+          <section class="help-card">
+            <h2>启动本地服务</h2>
+            <p>在 Easy WebBridge 项目目录中运行：</p>
+            <div class="command-row"><code>npm start</code><button type="button" class="copy-command" data-copy="npm start" aria-label="复制启动命令" title="复制"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+            <p>然后复制访问令牌：</p>
+            <div class="command-row"><code>pbcopy &lt; ~/.easy-webbridge/bridge-token</code><button type="button" class="copy-command" data-copy="pbcopy &lt; ~/.easy-webbridge/bridge-token" aria-label="复制令牌命令" title="复制"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+          </section>
+          <section class="notice">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+            <div><strong>只在本机通信</strong><p>Bridge 默认只监听 127.0.0.1，令牌不会上传到外部服务。</p></div>
+          </section>
+        </aside>
+      </div>
     </main>
+
     <script src="options.js"></script>
   </body>
 </html>

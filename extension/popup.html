@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,13 +7,60 @@
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <header><span id="dot"></span><strong>Easy WebBridge</strong></header>
+    <header class="app-header">
+      <div class="brand">
+        <img src="icons/icon-32.png" width="28" height="28" alt="">
+        <div>
+          <strong>Easy WebBridge</strong>
+          <span id="version">本地浏览器桥接</span>
+        </div>
+      </div>
+      <button class="icon-button" id="options" type="button" aria-label="打开设置" title="设置">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.14.37.36.7.65.96.3.25.67.4 1.06.4H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+      </button>
+    </header>
+
     <main>
-      <div class="name" id="name">Loading...</div>
-      <div class="id" id="id"></div>
-      <div class="status" id="status"></div>
-      <button id="options">Settings</button>
+      <section class="connection" id="connection" aria-live="polite">
+        <div class="status-row">
+          <span class="status-icon" id="statusIcon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>
+          </span>
+          <div class="status-copy">
+            <strong id="statusTitle">正在检查连接</strong>
+            <span id="statusText">请稍候…</span>
+          </div>
+          <span class="status-pill" id="statusPill">检查中</span>
+        </div>
+      </section>
+
+      <section class="identity" aria-labelledby="identityTitle">
+        <div class="section-heading">
+          <span>当前浏览器</span>
+          <span class="color-marker" id="colorMarker" aria-hidden="true"></span>
+        </div>
+        <h1 id="identityTitle">正在读取…</h1>
+        <div class="identity-meta">
+          <code id="shortId">—</code>
+          <button class="text-button" id="copyId" type="button" aria-label="复制完整浏览器 ID">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>复制 ID</span>
+          </button>
+        </div>
+      </section>
+
+      <div class="endpoint-row">
+        <span>本地服务</span>
+        <code id="endpoint">127.0.0.1:17777</code>
+      </div>
+
+      <button class="primary-button" id="primaryAction" type="button">
+        <svg id="primaryIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>
+        <span id="primaryLabel">完成设置</span>
+      </button>
+      <p class="action-feedback" id="feedback" role="status"></p>
     </main>
+
     <script src="popup.js"></script>
   </body>
 </html>

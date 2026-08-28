@@ -85,10 +85,12 @@ async function connect() {
     return;
   }
 
+  const currentSocket = socket;
   socket.addEventListener("open", async () => {
-    updateConnectionState(true);
+    if (socket !== currentSocket) return;
+    updateConnectionState(false, "正在验证本地连接");
     const platform = await chrome.runtime.getPlatformInfo();
-    socket.send(JSON.stringify({
+    currentSocket.send(JSON.stringify({
       type: "hello",
       ...identity,
       browser: browserName(),
@@ -100,23 +102,38 @@ async function connect() {
   socket.addEventListener("message", async (event) => {
     try {
       const message = JSON.parse(event.data);
+      if (message.type === "hello_ack") {
+        if (socket === currentSocket) updateConnectionState(true);
+        return;
+      }
       if (message.type !== "command") return;
       const result = await executeCommand(message.action, message.args || {});
-      socket?.send(JSON.stringify({ type: "result", commandId: message.commandId, ok: true, result }));
+      currentSocket.send(JSON.stringify({ type: "result", commandId: message.commandId, ok: true, result }));
     } catch (error) {
       const commandId = (() => {
         try { return JSON.parse(event.data).commandId; } catch { return null; }
       })();
-      socket?.send(JSON.stringify({ type: "result", commandId, ok: false, error: error.message }));
+      currentSocket.send(JSON.stringify({ type: "result", commandId, ok: false, error: error.message }));
     }
   });
 
   socket.addEventListener("close", () => {
+    if (socket !== currentSocket) return;
     socket = null;
     updateConnectionState(false, "Bridge connection closed");
     reconnectTimer = setTimeout(connect, 3_000);
   });
-  socket.addEventListener("error", () => updateConnectionState(false, "Unable to connect to local bridge"));
+  socket.addEventListener("error", () => {
+    if (socket === currentSocket) updateConnectionState(false, "Unable to connect to local bridge");
+  });
+}
+
+async function reconnect() {
+  clearTimeout(reconnectTimer);
+  const previousSocket = socket;
+  socket = null;
+  previousSocket?.close();
+  await connect();
 }
 
 async function activeTab(args = {}) {
@@ -286,9 +303,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "reconnect") {
-    socket?.close();
-    socket = null;
-    connect().then(() => sendResponse({ ok: true }));
+    reconnect().then(() => sendResponse({ ok: true }));
     return true;
   }
   if (message.type === "status") {
