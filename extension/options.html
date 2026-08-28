@@ -23,54 +23,55 @@
     <main id="main">
       <section class="intro">
         <p class="eyebrow">LOCAL AGENT BRIDGE</p>
-        <h1>连接当前浏览器</h1>
-        <p>完成一次设置后，Codex、Claude Code 等本地 Agent 就能通过独立身份控制这个浏览器。</p>
+        <h1>当前浏览器设置</h1>
+        <p>EasyBR 环境身份和本地安全令牌会自动识别。通常无需填写任何连接信息。</p>
       </section>
 
       <ol class="steps" aria-label="配置步骤">
-        <li><span>1</span><div><strong>启动 Bridge</strong><small>在项目目录运行本地服务</small></div></li>
-        <li><span>2</span><div><strong>填写令牌</strong><small>令牌仅保存在本机</small></div></li>
-        <li><span>3</span><div><strong>保存连接</strong><small>确认状态显示在线</small></div></li>
+        <li><span>1</span><div><strong>识别环境</strong><small>自动读取 EasyBR 环境 ID 和名称</small></div></li>
+        <li><span>2</span><div><strong>启动 Bridge</strong><small>在项目目录运行 npm start</small></div></li>
+        <li><span>3</span><div><strong>自动连接</strong><small>无需复制或填写访问令牌</small></div></li>
       </ol>
 
       <div class="layout">
         <form id="form" novalidate>
-          <section class="panel" aria-labelledby="connectionTitle">
+          <section class="panel auto-panel" aria-labelledby="connectionTitle">
             <div class="panel-heading">
               <div class="heading-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M8 12h8M12 8v8"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
               </div>
-              <div><h2 id="connectionTitle">本地连接</h2><p>服务只监听 127.0.0.1，不会开放到局域网。</p></div>
+              <div><h2 id="connectionTitle">自动连接</h2><p>默认服务只监听 127.0.0.1，扩展会自动安全配对。</p></div>
+            </div>
+            <div class="autopair-row">
+              <div><strong>零配置配对</strong><span>启动服务后自动连接，不需要复制令牌。</span></div>
+              <button class="secondary-button" id="testService" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>
+                <span>检测服务</span>
+              </button>
             </div>
 
-            <div class="field">
-              <label for="endpoint">Bridge 地址</label>
-              <div class="input-action">
-                <input id="endpoint" name="endpoint" required spellcheck="false" value="ws://127.0.0.1:17777/extension" aria-describedby="endpointHelp endpointError">
-                <button class="secondary-button" id="testService" type="button">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg>
-                  <span>检测服务</span>
-                </button>
+            <details class="advanced-settings">
+              <summary>高级连接设置</summary>
+              <div class="advanced-content">
+                <div class="field">
+                  <label for="endpoint">Bridge 地址</label>
+                  <input id="endpoint" name="endpoint" required spellcheck="false" value="ws://127.0.0.1:17777/extension" aria-describedby="endpointHelp endpointError">
+                  <p class="help" id="endpointHelp">仅在使用自定义 Bridge 地址时修改。</p>
+                  <p class="field-error" id="endpointError"></p>
+                </div>
+                <div class="field">
+                  <label for="token">访问令牌（可选）</label>
+                  <div class="password-field">
+                    <input id="token" name="token" type="password" autocomplete="new-password" placeholder="本地默认服务会自动填写" aria-describedby="tokenHelp">
+                    <button class="input-icon-button" id="toggleToken" type="button" aria-label="显示访问令牌" aria-pressed="false" title="显示令牌">
+                      <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.1 3.2M6.6 6.6C3.6 8.6 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.1-.9"/></svg>
+                    </button>
+                  </div>
+                  <p class="help" id="tokenHelp">远程或自定义服务才需要手工填写。</p>
+                </div>
               </div>
-              <p class="help" id="endpointHelp">默认地址通常无需修改。</p>
-              <p class="field-error" id="endpointError"></p>
-            </div>
-
-            <div class="field">
-              <label for="token">访问令牌</label>
-              <div class="password-field">
-                <input id="token" name="token" type="password" required autocomplete="new-password" placeholder="粘贴 bridge-token 中的令牌" aria-describedby="tokenHelp tokenError">
-                <button class="input-icon-button" id="toggleToken" type="button" aria-label="显示访问令牌" aria-pressed="false" title="显示令牌">
-                  <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                  <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.1 3.2M6.6 6.6C3.6 8.6 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.1-.9"/></svg>
-                </button>
-              </div>
-              <div class="help-row" id="tokenHelp">
-                <span>令牌保存在 <code>~/.easy-webbridge/bridge-token</code></span>
-                <button class="link-button" id="copyTokenCommand" type="button">复制获取命令</button>
-              </div>
-              <p class="field-error" id="tokenError"></p>
-            </div>
+            </details>
           </section>
 
           <section class="panel" aria-labelledby="identityTitle">
@@ -128,8 +129,7 @@
             <h2>启动本地服务</h2>
             <p>在 Easy WebBridge 项目目录中运行：</p>
             <div class="command-row"><code>npm start</code><button type="button" class="copy-command" data-copy="npm start" aria-label="复制启动命令" title="复制"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
-            <p>然后复制访问令牌：</p>
-            <div class="command-row"><code>pbcopy &lt; ~/.easy-webbridge/bridge-token</code><button type="button" class="copy-command" data-copy="pbcopy &lt; ~/.easy-webbridge/bridge-token" aria-label="复制令牌命令" title="复制"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+            <p class="automatic-note">服务启动后，扩展会自动识别当前 EasyBR 环境并完成连接。</p>
           </section>
           <section class="notice">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>

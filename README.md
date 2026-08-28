@@ -53,16 +53,10 @@ npm install
 npm start
 ```
 
-The bridge listens on `127.0.0.1:17777` and creates a token at:
+The bridge listens on `127.0.0.1:17777`. The extension pairs with the local service automatically and stores its generated token in the browser profile. The token is also available to the CLI at:
 
 ```text
 ~/.easy-webbridge/bridge-token
-```
-
-On macOS, copy it without displaying it in terminal:
-
-```bash
-pbcopy < ~/.easy-webbridge/bridge-token
 ```
 
 Then:
@@ -70,9 +64,10 @@ Then:
 1. Open `chrome://extensions`.
 2. Enable Developer mode.
 3. Choose **Load unpacked** and select the `extension/` directory.
-4. Open the extension Settings page.
-5. Paste the bridge token, assign a browser name and color, then save.
-6. Repeat in every browser or profile you want to control.
+4. The extension connects automatically. Optionally assign a clearer browser name and color in Settings.
+5. Repeat in every browser or profile you want to control.
+
+Inside EasyBR, the extension also recognizes the default `localhost:3001/help/eindex.html?id=...` start page. On first use it adopts that environment's stable ID, name and a deterministic color. Manual identity settings always take precedence and are never overwritten.
 
 Chrome may show a persistent debugging notice after the first raw CDP command. This is expected for extensions using the `debugger` permission.
 

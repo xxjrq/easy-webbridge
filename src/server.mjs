@@ -12,11 +12,12 @@ import { isExtensionOrigin, normalizeCommand } from "./protocol.mjs";
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 17_777;
 
-function json(response, status, body) {
+function json(response, status, body, headers = {}) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
+    ...headers,
   });
   response.end(JSON.stringify(body));
 }
@@ -74,12 +75,21 @@ export async function createBridgeServer(options = {}) {
     ? { token: options.token, tokenPath: null }
     : await loadOrCreateToken(dataDir);
   const registry = new BrowserRegistry();
+  const pairingEnabled = ["127.0.0.1", "::1", "localhost"].includes(host);
 
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url || "/", `http://${request.headers.host || `${host}:${port}`}`);
       if (request.method === "GET" && url.pathname === "/health") {
         return json(response, 200, { ok: true, service: "easy-webbridge", browsers: registry.list().filter((item) => item.online).length });
+      }
+
+      if (request.method === "POST" && url.pathname === "/pair") {
+        const origin = String(request.headers.origin || "");
+        if (!pairingEnabled || !isExtensionOrigin(origin)) {
+          return json(response, 403, { ok: false, error: "Extension pairing is not allowed" });
+        }
+        return json(response, 200, { ok: true, token: auth.token }, { "Access-Control-Allow-Origin": origin });
       }
 
       if (bearerToken(request) !== auth.token) {
@@ -175,7 +185,7 @@ async function main() {
   });
   console.log(`Easy WebBridge listening on http://${bridge.host}:${bridge.port}`);
   if (bridge.tokenPath) console.log(`Bridge token: ${bridge.tokenPath}`);
-  console.log("Load extension/ as an unpacked extension, then paste the token into its Options page.");
+  console.log("Load extension/ as an unpacked extension. It will pair with this local service automatically.");
 
   const shutdown = async () => {
     await bridge.close();

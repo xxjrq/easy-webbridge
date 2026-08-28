@@ -1,3 +1,5 @@
+import { easyBrProfileId, identityColor } from "./identity.js";
+
 const DEFAULTS = {
   endpoint: "ws://127.0.0.1:17777/extension",
   token: "",
@@ -14,14 +16,78 @@ async function settings() {
   return chrome.storage.local.get(DEFAULTS);
 }
 
+async function discoverEasyBrIdentity() {
+  const tabs = await chrome.tabs.query({});
+  const profileTab = tabs.find((tab) => easyBrProfileId(tab.url));
+  if (!profileTab) return null;
+
+  const profileId = easyBrProfileId(profileTab.url);
+
+  try {
+    const keyResponse = await fetch("http://localhost:3001/user/getkey", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ browerid: profileId }),
+    });
+    const keyPayload = await keyResponse.json();
+    if (!keyResponse.ok || !keyPayload?.LoginKey) throw new Error("EasyBR profile key is unavailable");
+
+    const configResponse = await fetch("http://localhost:3001/user/getconfig", {
+      method: "POST",
+      headers: { "Authorization": keyPayload.LoginKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ browerid: profileId }),
+    });
+    const configPayload = await configResponse.json();
+    const profile = configPayload?.configData;
+    if (!configResponse.ok || !profile) throw new Error("EasyBR profile information is unavailable");
+    return {
+      profileId,
+      browserId: `easybr-${profileId}`,
+      displayName: String(profile.browername || `EasyBR ${profile.rownum || profileId.slice(-4)}`).trim(),
+      groupName: String(profile.groupname || "").trim(),
+      rowNumber: profile.rownum ?? null,
+      kernel: String(profile.kernel || "").trim(),
+    };
+  } catch {
+    return {
+      profileId,
+      browserId: `easybr-${profileId}`,
+      displayName: `EasyBR ${profileId.slice(-4).toUpperCase()}`,
+      groupName: "",
+      rowNumber: null,
+      kernel: "",
+    };
+  }
+}
+
 async function ensureIdentity() {
-  const stored = await chrome.storage.local.get(["browserId", "displayName", "color"]);
+  const stored = await chrome.storage.local.get(["browserId", "displayName", "color", "identitySource", "profileId", "groupName", "rowNumber", "kernel"]);
+  if (stored.identitySource === "easybr" && stored.profileId) {
+    await applyVisualIdentity(stored.displayName, stored.color);
+    return stored;
+  }
+
+  if (stored.identitySource !== "manual") {
+    const discovered = await discoverEasyBrIdentity();
+    if (discovered) {
+      const identity = {
+        ...discovered,
+        color: identityColor(discovered.profileId),
+        identitySource: "easybr",
+      };
+      await chrome.storage.local.set(identity);
+      await applyVisualIdentity(identity.displayName, identity.color);
+      return identity;
+    }
+  }
+
   const browserId = stored.browserId || `browser-${crypto.randomUUID()}`;
   const displayName = stored.displayName || `Browser ${browserId.slice(-4).toUpperCase()}`;
   const color = stored.color || DEFAULTS.color;
-  await chrome.storage.local.set({ browserId, displayName, color });
+  const identitySource = stored.identitySource || "generated";
+  await chrome.storage.local.set({ browserId, displayName, color, identitySource });
   await applyVisualIdentity(displayName, color);
-  return { browserId, displayName, color };
+  return { browserId, displayName, color, identitySource };
 }
 
 function roundRect(context, x, y, width, height, radius) {
@@ -65,13 +131,46 @@ function updateConnectionState(isConnected, error = "") {
   chrome.action.setBadgeTextColor?.({ color: "#ffffff" });
 }
 
+function pairingUrl(endpoint) {
+  const url = new URL(endpoint);
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
+    throw new Error("Bridge token is not configured");
+  }
+  url.protocol = url.protocol === "wss:" ? "https:" : "http:";
+  url.pathname = "/pair";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
+async function pairWithLocalBridge(endpoint) {
+  const response = await fetch(pairingUrl(endpoint), { method: "POST", cache: "no-store" });
+  const payload = await response.json();
+  if (!response.ok || !payload?.token) throw new Error(payload?.error || "Automatic pairing failed");
+  await chrome.storage.local.set({ token: payload.token });
+  return payload.token;
+}
+
+function scheduleReconnect() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(connect, 3_000);
+}
+
 async function connect() {
   clearTimeout(reconnectTimer);
-  const config = await settings();
+  let config = await settings();
   const identity = await ensureIdentity();
   if (!config.token) {
-    updateConnectionState(false, "Bridge token is not configured");
-    return;
+    updateConnectionState(false, "正在自动配对本地服务");
+    try {
+      const token = await pairWithLocalBridge(config.endpoint);
+      config = { ...config, token };
+    } catch (error) {
+      const message = error instanceof TypeError ? "Local bridge is not running" : error.message;
+      updateConnectionState(false, message);
+      scheduleReconnect();
+      return;
+    }
   }
   if (socket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(socket.readyState)) return;
 
@@ -86,6 +185,7 @@ async function connect() {
   }
 
   const currentSocket = socket;
+  let acknowledged = false;
   socket.addEventListener("open", async () => {
     if (socket !== currentSocket) return;
     updateConnectionState(false, "正在验证本地连接");
@@ -103,6 +203,7 @@ async function connect() {
     try {
       const message = JSON.parse(event.data);
       if (message.type === "hello_ack") {
+        acknowledged = true;
         if (socket === currentSocket) updateConnectionState(true);
         return;
       }
@@ -121,7 +222,10 @@ async function connect() {
     if (socket !== currentSocket) return;
     socket = null;
     updateConnectionState(false, "Bridge connection closed");
-    reconnectTimer = setTimeout(connect, 3_000);
+    if (!acknowledged && ["127.0.0.1", "localhost", "[::1]"].includes(endpoint.hostname)) {
+      chrome.storage.local.remove("token");
+    }
+    scheduleReconnect();
   });
   socket.addEventListener("error", () => {
     if (socket === currentSocket) updateConnectionState(false, "Unable to connect to local bridge");
@@ -301,13 +405,21 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "ping", time: Date.now() }));
   else connect();
 });
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+  if (!easyBrProfileId(changeInfo.url || tab.url)) return;
+  chrome.storage.local.get(["identitySource"]).then(({ identitySource }) => {
+    if (!identitySource || identitySource === "generated") reconnect();
+  });
+});
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "reconnect") {
     reconnect().then(() => sendResponse({ ok: true }));
     return true;
   }
   if (message.type === "status") {
-    settings().then((config) => sendResponse({ ok: true, connected, ...config, token: config.token ? "configured" : "" }));
+    chrome.storage.local.get({ ...DEFAULTS, browserId: "", identitySource: "", profileId: "", groupName: "", rowNumber: null, kernel: "" }).then((config) => {
+      sendResponse({ ok: true, connected, ...config, token: config.token ? "configured" : "" });
+    });
     return true;
   }
   return false;

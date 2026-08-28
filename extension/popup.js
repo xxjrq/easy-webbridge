@@ -11,6 +11,7 @@ function localizeError(error) {
   const value = String(error || "");
   if (value.includes("token is not configured")) return "请先保存本地访问令牌";
   if (value.includes("Unable to connect")) return "请先启动本地 Bridge 服务";
+  if (value.includes("Local bridge is not running")) return "请先运行 npm start 启动本地服务";
   if (value.includes("connection closed")) return "本地服务已断开，请重新连接";
   if (value.includes("401") || value.includes("Unauthorized")) return "访问令牌不正确，请重新填写";
   return value || "尚未连接本地服务";
@@ -46,13 +47,23 @@ function renderConnection(data) {
     return;
   }
 
-  if (!state.configured) {
+  if (!state.configured && String(data.connectionError || "").includes("正在自动配对")) {
+    connection.classList.add("loading");
+    icon.innerHTML = icons.loading;
+    title.textContent = "正在自动连接";
+    text.textContent = "正在识别当前浏览器和本地服务";
+    pill.textContent = "处理中";
+    label.textContent = "重新检测";
+    return;
+  }
+
+  if (!state.configured && !data.connectionError) {
     connection.classList.add("warning");
     icon.innerHTML = icons.warning;
-    title.textContent = "还差一步即可使用";
-    text.textContent = "需要填写本地 Bridge 访问令牌";
-    pill.textContent = "未配置";
-    label.textContent = "完成设置";
+    title.textContent = "正在自动配置";
+    text.textContent = "启动本地服务后将自动完成连接";
+    pill.textContent = "待连接";
+    label.textContent = "重新检测";
     return;
   }
 
@@ -78,6 +89,9 @@ async function load() {
   const data = await getStatus();
   state.browserId = data.browserId || "";
   document.querySelector("#identityTitle").textContent = data.displayName || "未命名浏览器";
+  document.querySelector("#identitySource").textContent = data.identitySource === "easybr"
+    ? `EasyBR 环境${data.rowNumber ? ` · #${data.rowNumber}` : ""}`
+    : "当前浏览器";
   document.querySelector("#shortId").textContent = state.browserId ? `${state.browserId.slice(0, 15)}…${state.browserId.slice(-6)}` : "正在生成 ID";
   document.querySelector("#shortId").title = state.browserId;
   document.querySelector("#colorMarker").style.background = data.color || "#2563eb";
@@ -97,11 +111,6 @@ document.querySelector("#copyId").addEventListener("click", async () => {
 });
 
 document.querySelector("#primaryAction").addEventListener("click", async () => {
-  if (!state.configured) {
-    await chrome.runtime.openOptionsPage();
-    return;
-  }
-
   const button = document.querySelector("#primaryAction");
   const feedback = document.querySelector("#feedback");
   button.disabled = true;

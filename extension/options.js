@@ -73,10 +73,8 @@ function showFieldError(input, errorElement, text) {
 
 function validate() {
   const endpointError = document.querySelector("#endpointError");
-  const tokenError = document.querySelector("#tokenError");
   const nameError = document.querySelector("#nameError");
   clearFieldError(elements.endpoint, endpointError);
-  clearFieldError(elements.token, tokenError);
   clearFieldError(elements.displayName, nameError);
 
   let firstInvalid = null;
@@ -85,10 +83,6 @@ function validate() {
   } catch (error) {
     showFieldError(elements.endpoint, endpointError, error.message || "请输入有效的 Bridge 地址");
     firstInvalid ||= elements.endpoint;
-  }
-  if (!elements.token.value.trim()) {
-    showFieldError(elements.token, tokenError, "请粘贴本地 Bridge 访问令牌");
-    firstInvalid ||= elements.token;
   }
   if (!elements.displayName.value.trim()) {
     showFieldError(elements.displayName, nameError, "请为当前浏览器填写一个易识别的名称");
@@ -172,7 +166,6 @@ document.querySelector("#swatches").addEventListener("keydown", (event) => {
 
 elements.testService.addEventListener("click", () => checkService());
 document.querySelector("#copyBrowserId").addEventListener("click", () => copyText(elements.browserId.value, "浏览器 ID 已复制"));
-document.querySelector("#copyTokenCommand").addEventListener("click", () => copyText("pbcopy < ~/.easy-webbridge/bridge-token", "获取令牌命令已复制"));
 for (const button of document.querySelectorAll(".copy-command")) {
   button.addEventListener("click", () => copyText(button.dataset.copy, "命令已复制"));
 }
@@ -194,6 +187,7 @@ elements.form.addEventListener("submit", async (event) => {
     token: elements.token.value.trim(),
     displayName: elements.displayName.value.trim(),
     color: elements.color.value,
+    identitySource: "manual",
   };
   elements.saveButton.disabled = true;
   elements.saveButton.querySelector("span").textContent = "正在连接…";

@@ -77,3 +77,28 @@ test("rejects HTTP and WebSocket clients without the token", async () => {
     await rm(dataDir, { recursive: true, force: true });
   }
 });
+
+test("pairs local browser extensions without manual token entry", async () => {
+  const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
+  const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });
+  const url = `http://${bridge.host}:${bridge.port}`;
+  try {
+    const pairedResponse = await fetch(`${url}/pair`, {
+      method: "POST",
+      headers: { Origin: "chrome-extension://agentbrowserbridgetest" },
+    });
+    const paired = await pairedResponse.json();
+    assert.equal(pairedResponse.status, 200);
+    assert.equal(paired.token, bridge.token);
+    assert.equal(pairedResponse.headers.get("access-control-allow-origin"), "chrome-extension://agentbrowserbridgetest");
+
+    const rejectedResponse = await fetch(`${url}/pair`, {
+      method: "POST",
+      headers: { Origin: "https://example.com" },
+    });
+    assert.equal(rejectedResponse.status, 403);
+  } finally {
+    await bridge.close();
+    await rm(dataDir, { recursive: true, force: true });
+  }
+});
