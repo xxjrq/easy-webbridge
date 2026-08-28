@@ -341,6 +341,11 @@ async function cdp(tabId, method, params = {}) {
 }
 
 async function executeCommand(action, args) {
+  if (action === "reload_extension") {
+    const extensionVersion = chrome.runtime.getManifest().version;
+    setTimeout(() => chrome.runtime.reload(), 250);
+    return { reloading: true, extensionVersion };
+  }
   if (action === "list_tabs") {
     const tabs = await chrome.tabs.query({});
     return tabs.map(({ id, windowId, active, pinned, title, url, status }) => ({ id, windowId, active, pinned, title, url, status }));

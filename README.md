@@ -39,6 +39,7 @@ Codex / Claude Code / Agent
 - Upload local files through CDP
 - Read, set and remove cookies
 - Start browser downloads
+- Reload a selected profile's Easy WebBridge extension and reconnect automatically
 
 The extension requests broad permissions intentionally. Install it only in browser profiles you want an AI agent to control.
 
@@ -80,6 +81,7 @@ node cli/easy-webbridge.mjs snapshot <browserId>
 node cli/easy-webbridge.mjs click <browserId> @e3
 node cli/easy-webbridge.mjs fill <browserId> @e4 "hello"
 node cli/easy-webbridge.mjs screenshot <browserId>
+node cli/easy-webbridge.mjs command <browserId> reload_extension '{}'
 node cli/easy-webbridge.mjs command <browserId> cdp '{"method":"Page.reload","params":{}}'
 ```
 

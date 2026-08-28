@@ -77,6 +77,7 @@ Supported actions include:
 - `upload` with a file-input CSS `selector` and absolute `files`
 - `get_cookies`, `set_cookie`, `remove_cookie`
 - `download` with Chrome download options
+- `reload_extension` to reload Easy WebBridge in the selected browser profile
 
 For full payload shapes, read [references/api.md](references/api.md).
 

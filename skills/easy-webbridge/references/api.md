@@ -52,6 +52,7 @@ Content-Type: application/json
 
 ### Browser and CDP
 
+- `reload_extension`: `{}` (reloads this profile's extension and reconnects automatically)
 - `screenshot`: `{ "tabId": 123, "format": "png" }`
 - `cdp`: `{ "tabId": 123, "method": "Page.reload", "params": {} }`
 - `upload`: `{ "tabId": 123, "selector": "input[type=file]", "files": ["/absolute/path/file.png"] }`

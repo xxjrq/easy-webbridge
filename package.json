@@ -1,6 +1,6 @@
 {
   "name": "easy-webbridge",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Open local WebBridge for AI agents to control multiple Chromium browser profiles.",
   "type": "module",
   "private": false,

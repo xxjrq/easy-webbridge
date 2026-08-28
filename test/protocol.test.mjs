@@ -8,6 +8,11 @@ test("normalizes supported high-permission commands", () => {
     args: { method: "Page.reload" },
     timeoutMs: 15_000,
   });
+  assert.deepEqual(normalizeCommand({ action: "reload_extension" }), {
+    action: "reload_extension",
+    args: {},
+    timeoutMs: 15_000,
+  });
 });
 
 test("rejects unsupported actions and invalid timeouts", () => {

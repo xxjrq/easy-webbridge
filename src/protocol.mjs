@@ -15,6 +15,7 @@ export const COMMANDS = new Set([
   "set_cookie",
   "remove_cookie",
   "download",
+  "reload_extension",
 ]);
 
 export function normalizeCommand(body = {}) {
