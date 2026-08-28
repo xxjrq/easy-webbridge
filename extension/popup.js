@@ -11,7 +11,7 @@ function localizeError(error) {
   const value = String(error || "");
   if (value.includes("token is not configured")) return "请先保存本地访问令牌";
   if (value.includes("Unable to connect")) return "请先启动本地 Bridge 服务";
-  if (value.includes("Local bridge is not running")) return "请先运行 npm start 启动本地服务";
+  if (value.includes("Local bridge is not running")) return "请先运行 node cli/easy-webbridge.mjs start";
   if (value.includes("connection closed")) return "本地服务已断开，请重新连接";
   if (value.includes("401") || value.includes("Unauthorized")) return "访问令牌不正确，请重新填写";
   return value || "尚未连接本地服务";

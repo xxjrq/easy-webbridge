@@ -111,7 +111,7 @@
                   <span>复制 ID</span>
                 </button>
               </div>
-              <p class="help" id="browserIdHelp">此 ID 自动生成且保持稳定，用于精确路由 Agent 指令。</p>
+              <p class="help" id="browserIdHelp">Agent 靠这个 ID 找到当前浏览器，不会操作错环境。</p>
             </div>
           </section>
 
@@ -128,7 +128,7 @@
           <section class="help-card">
             <h2>启动本地服务</h2>
             <p>在 Easy WebBridge 项目目录中运行：</p>
-            <div class="command-row"><code>npm start</code><button type="button" class="copy-command" data-copy="npm start" aria-label="复制启动命令" title="复制"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+            <div class="command-row"><code>node cli/easy-webbridge.mjs start</code><button type="button" class="copy-command" data-copy="node cli/easy-webbridge.mjs start" aria-label="复制启动命令" title="复制"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
             <p class="automatic-note">服务启动后，扩展会自动识别当前 EasyBR 环境并完成连接。</p>
           </section>
           <section class="notice">
