@@ -1,6 +1,6 @@
 <div align="center">
 
-# Agent Browser Bridge
+# Easy WebBridge
 
 **Open local browser control for Codex, Claude Code and other AI agents.**
 
@@ -10,19 +10,19 @@ One bridge, many Chromium browsers. Each browser profile keeps an independent ID
 
 ## What it does
 
-Agent Browser Bridge is a self-hosted alternative to single-browser bridge extensions. It contains:
+Easy WebBridge is a self-hosted alternative to single-browser bridge extensions. It contains:
 
 - A high-permission Manifest V3 extension for Chrome, Edge and Chromium browsers
 - A localhost bridge that multiplexes multiple browser profiles
 - A stable HTTP API and CLI for AI agents
-- A portable Agent Skill under `skills/agent-browser-bridge`
+- A portable Agent Skill under `skills/easy-webbridge`
 
 ```text
 Codex / Claude Code / Agent
              |
        HTTP on localhost
              |
-      Agent Browser Bridge
+         Easy WebBridge
        /        |        \
   Browser A  Browser B  Browser C
    blue ID    green ID   orange ID
@@ -56,13 +56,13 @@ npm start
 The bridge listens on `127.0.0.1:17777` and creates a token at:
 
 ```text
-~/.agent-browser-bridge/bridge-token
+~/.easy-webbridge/bridge-token
 ```
 
 On macOS, copy it without displaying it in terminal:
 
 ```bash
-pbcopy < ~/.agent-browser-bridge/bridge-token
+pbcopy < ~/.easy-webbridge/bridge-token
 ```
 
 Then:
@@ -79,32 +79,32 @@ Chrome may show a persistent debugging notice after the first raw CDP command. T
 ## Agent CLI
 
 ```bash
-node cli/agent-browser.mjs list
-node cli/agent-browser.mjs navigate <browserId> https://example.com --new-tab
-node cli/agent-browser.mjs snapshot <browserId>
-node cli/agent-browser.mjs click <browserId> @e3
-node cli/agent-browser.mjs fill <browserId> @e4 "hello"
-node cli/agent-browser.mjs screenshot <browserId>
-node cli/agent-browser.mjs command <browserId> cdp '{"method":"Page.reload","params":{}}'
+node cli/easy-webbridge.mjs list
+node cli/easy-webbridge.mjs navigate <browserId> https://example.com --new-tab
+node cli/easy-webbridge.mjs snapshot <browserId>
+node cli/easy-webbridge.mjs click <browserId> @e3
+node cli/easy-webbridge.mjs fill <browserId> @e4 "hello"
+node cli/easy-webbridge.mjs screenshot <browserId>
+node cli/easy-webbridge.mjs command <browserId> cdp '{"method":"Page.reload","params":{}}'
 ```
 
-Set `AGENT_BROWSER_URL` and `AGENT_BROWSER_TOKEN` to override the defaults.
+Set `EASY_WEBBRIDGE_URL` and `EASY_WEBBRIDGE_TOKEN` to override the defaults.
 
 ## Install the Agent Skill
 
 Codex:
 
 ```bash
-ln -s "$(pwd)/skills/agent-browser-bridge" ~/.codex/skills/agent-browser-bridge
+ln -s "$(pwd)/skills/easy-webbridge" ~/.codex/skills/easy-webbridge
 ```
 
 Claude Code:
 
 ```bash
-ln -s "$(pwd)/skills/agent-browser-bridge" ~/.claude/skills/agent-browser-bridge
+ln -s "$(pwd)/skills/easy-webbridge" ~/.claude/skills/easy-webbridge
 ```
 
-Other agents can read `skills/agent-browser-bridge/SKILL.md` and call the same CLI or HTTP API.
+Other agents can read `skills/easy-webbridge/SKILL.md` and call the same CLI or HTTP API.
 
 ## Security model
 
@@ -113,7 +113,7 @@ Other agents can read `skills/agent-browser-bridge/SKILL.md` and call the same C
 - WebSocket connections accept browser-extension origins only.
 - Every browser profile receives an independent UUID.
 - Agents must name the target `browserId`; commands are never broadcast.
-- Screenshots are saved under `~/.agent-browser-bridge/screenshots` with user-only permissions.
+- Screenshots are saved under `~/.easy-webbridge/screenshots` with user-only permissions.
 
 The extension can access all websites, cookies, downloads and CDP. Use a separate browser profile for sensitive accounts and revoke access by removing the extension or rotating the token.
 

@@ -1,4 +1,4 @@
-# Agent Browser Bridge API
+# Easy WebBridge API
 
 ## Authentication
 

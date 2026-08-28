@@ -48,7 +48,7 @@ async function applyVisualIdentity(displayName, color) {
   await chrome.action.setIcon({ imageData });
   await chrome.action.setBadgeText({ text: displayName.slice(0, 2).toUpperCase() });
   await chrome.action.setBadgeBackgroundColor({ color });
-  await chrome.action.setTitle({ title: `Agent Browser Bridge · ${displayName}` });
+  await chrome.action.setTitle({ title: `Easy WebBridge · ${displayName}` });
 }
 
 function browserName() {

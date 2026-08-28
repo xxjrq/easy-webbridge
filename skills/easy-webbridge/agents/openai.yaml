@@ -1,0 +1,4 @@
+interface:
+  display_name: "Easy WebBridge"
+  short_description: "Control multiple browser profiles through a local bridge"
+  default_prompt: "Use $easy-webbridge to list connected browsers and safely operate the selected browser."

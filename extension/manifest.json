@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Agent Browser Bridge",
+  "name": "Easy WebBridge",
   "version": "0.1.0",
-  "description": "Connect this browser profile to local AI agents through Agent Browser Bridge.",
+  "description": "Connect this browser profile to local AI agents through Easy WebBridge.",
   "permissions": [
     "activeTab",
     "tabs",
@@ -22,7 +22,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Agent Browser Bridge",
+    "default_title": "Easy WebBridge",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",

@@ -1,9 +1,9 @@
 ---
-name: agent-browser-bridge
-description: Control one or more local Chrome, Edge, Chromium, or browser-profile instances through Agent Browser Bridge. Use when an agent needs to open URLs, inspect tabs, read page content, click or fill elements, take screenshots, upload files, manage cookies/downloads, execute page JavaScript, send Chrome DevTools Protocol commands, or route browser work to a specific named browser identity.
+name: easy-webbridge
+description: Control one or more local Chrome, Edge, Chromium, or browser-profile instances through Easy WebBridge. Use when an agent needs to open URLs, inspect tabs, read page content, click or fill elements, take screenshots, upload files, manage cookies/downloads, execute page JavaScript, send Chrome DevTools Protocol commands, or route browser work to a specific named browser identity.
 ---
 
-# Agent Browser Bridge
+# Easy WebBridge
 
 Use the bundled CLI to control browser profiles connected to the local bridge. Route every command to an explicit `browserId`; never broadcast commands.
 
@@ -15,14 +15,14 @@ Use the bundled CLI to control browser profiles connected to the local bridge. R
 curl -s http://127.0.0.1:17777/health
 ```
 
-2. If unavailable, start the `agent-browser-bridge` project with `npm start`. Do not expose its port beyond `127.0.0.1`.
+2. If unavailable, start the `easy-webbridge` project with `npm start`. Do not expose its port beyond `127.0.0.1`.
 3. Run the bundled script from this skill directory:
 
 ```bash
-node scripts/agent-browser.mjs list
+node scripts/easy-webbridge.mjs list
 ```
 
-The script reads the token from `~/.agent-browser-bridge/bridge-token`. Override with `AGENT_BROWSER_URL` and `AGENT_BROWSER_TOKEN` only when the user has configured a different bridge.
+The script reads the token from `~/.easy-webbridge/bridge-token`. Override with `EASY_WEBBRIDGE_URL` and `EASY_WEBBRIDGE_TOKEN` only when the user has configured a different bridge.
 
 ## Select A Browser
 
@@ -36,27 +36,27 @@ The script reads the token from `~/.agent-browser-bridge/bridge-token`. Override
 Start by listing tabs or opening the requested URL:
 
 ```bash
-node scripts/agent-browser.mjs command <browserId> list_tabs '{}'
-node scripts/agent-browser.mjs navigate <browserId> https://example.com --new-tab
+node scripts/easy-webbridge.mjs command <browserId> list_tabs '{}'
+node scripts/easy-webbridge.mjs navigate <browserId> https://example.com --new-tab
 ```
 
 Read a semantic snapshot before interacting:
 
 ```bash
-node scripts/agent-browser.mjs snapshot <browserId> [tabId]
+node scripts/easy-webbridge.mjs snapshot <browserId> [tabId]
 ```
 
 Use the returned `@e1`, `@e2` references for resilient interaction:
 
 ```bash
-node scripts/agent-browser.mjs click <browserId> @e3 [tabId]
-node scripts/agent-browser.mjs fill <browserId> @e4 "value" [tabId]
+node scripts/easy-webbridge.mjs click <browserId> @e3 [tabId]
+node scripts/easy-webbridge.mjs fill <browserId> @e4 "value" [tabId]
 ```
 
 Take a screenshot when visual state matters:
 
 ```bash
-node scripts/agent-browser.mjs screenshot <browserId> [tabId]
+node scripts/easy-webbridge.mjs screenshot <browserId> [tabId]
 ```
 
 The command returns an absolute local image path. Inspect the image before claiming visual success.
@@ -66,7 +66,7 @@ The command returns an absolute local image path. Inspect the image before claim
 Use the generic command form for advanced browser operations:
 
 ```bash
-node scripts/agent-browser.mjs command <browserId> <action> '<args-json>'
+node scripts/easy-webbridge.mjs command <browserId> <action> '<args-json>'
 ```
 
 Supported actions include:

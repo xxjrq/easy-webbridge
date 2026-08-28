@@ -1,4 +1,0 @@
-interface:
-  display_name: "Agent Browser Bridge"
-  short_description: "Control multiple browser profiles through a local bridge"
-  default_prompt: "Use $agent-browser-bridge to list connected browsers and safely operate the selected browser."

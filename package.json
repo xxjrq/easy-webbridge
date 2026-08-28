@@ -1,7 +1,7 @@
 {
-  "name": "agent-browser-bridge",
+  "name": "easy-webbridge",
   "version": "0.1.0",
-  "description": "Open local bridge for AI agents to control multiple Chromium browser profiles.",
+  "description": "Open local WebBridge for AI agents to control multiple Chromium browser profiles.",
   "type": "module",
   "private": false,
   "license": "MIT",
@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "bin": {
-    "agent-browser": "./cli/agent-browser.mjs"
+    "easy-webbridge": "./cli/easy-webbridge.mjs"
   },
   "scripts": {
     "start": "node src/server.mjs",

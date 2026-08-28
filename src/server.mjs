@@ -69,7 +69,7 @@ async function persistScreenshot(result, dataDir, browserId) {
 export async function createBridgeServer(options = {}) {
   const host = options.host || DEFAULT_HOST;
   const port = Number(options.port ?? DEFAULT_PORT);
-  const dataDir = resolve(options.dataDir || process.env.AGENT_BROWSER_DATA_DIR || join(homedir(), ".agent-browser-bridge"));
+  const dataDir = resolve(options.dataDir || process.env.EASY_WEBBRIDGE_DATA_DIR || join(homedir(), ".easy-webbridge"));
   const auth = options.token
     ? { token: options.token, tokenPath: null }
     : await loadOrCreateToken(dataDir);
@@ -79,7 +79,7 @@ export async function createBridgeServer(options = {}) {
     try {
       const url = new URL(request.url || "/", `http://${request.headers.host || `${host}:${port}`}`);
       if (request.method === "GET" && url.pathname === "/health") {
-        return json(response, 200, { ok: true, service: "agent-browser-bridge", browsers: registry.list().filter((item) => item.online).length });
+        return json(response, 200, { ok: true, service: "easy-webbridge", browsers: registry.list().filter((item) => item.online).length });
       }
 
       if (bearerToken(request) !== auth.token) {
@@ -169,11 +169,11 @@ export async function createBridgeServer(options = {}) {
 
 async function main() {
   const bridge = await createBridgeServer({
-    host: process.env.AGENT_BROWSER_HOST || DEFAULT_HOST,
-    port: Number(process.env.AGENT_BROWSER_PORT || DEFAULT_PORT),
-    token: process.env.AGENT_BROWSER_TOKEN || undefined,
+    host: process.env.EASY_WEBBRIDGE_HOST || DEFAULT_HOST,
+    port: Number(process.env.EASY_WEBBRIDGE_PORT || DEFAULT_PORT),
+    token: process.env.EASY_WEBBRIDGE_TOKEN || undefined,
   });
-  console.log(`Agent Browser Bridge listening on http://${bridge.host}:${bridge.port}`);
+  console.log(`Easy WebBridge listening on http://${bridge.host}:${bridge.port}`);
   if (bridge.tokenPath) console.log(`Bridge token: ${bridge.tokenPath}`);
   console.log("Load extension/ as an unpacked extension, then paste the token into its Options page.");
 

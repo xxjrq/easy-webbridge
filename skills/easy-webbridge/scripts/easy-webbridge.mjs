@@ -3,11 +3,11 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const baseUrl = process.env.AGENT_BROWSER_URL || "http://127.0.0.1:17777";
+const baseUrl = process.env.EASY_WEBBRIDGE_URL || "http://127.0.0.1:17777";
 
 async function token() {
-  if (process.env.AGENT_BROWSER_TOKEN) return process.env.AGENT_BROWSER_TOKEN;
-  return (await readFile(join(homedir(), ".agent-browser-bridge", "bridge-token"), "utf8")).trim();
+  if (process.env.EASY_WEBBRIDGE_TOKEN) return process.env.EASY_WEBBRIDGE_TOKEN;
+  return (await readFile(join(homedir(), ".easy-webbridge", "bridge-token"), "utf8")).trim();
 }
 
 async function request(path, init = {}) {
@@ -26,13 +26,13 @@ async function request(path, init = {}) {
 
 function usage() {
   console.error(`Usage:
-  agent-browser list
-  agent-browser command <browserId> <action> [args-json]
-  agent-browser navigate <browserId> <url> [--new-tab]
-  agent-browser snapshot <browserId> [tabId]
-  agent-browser click <browserId> <selector> [tabId]
-  agent-browser fill <browserId> <selector> <value> [tabId]
-  agent-browser screenshot <browserId> [tabId]`);
+  easy-webbridge list
+  easy-webbridge command <browserId> <action> [args-json]
+  easy-webbridge navigate <browserId> <url> [--new-tab]
+  easy-webbridge snapshot <browserId> [tabId]
+  easy-webbridge click <browserId> <selector> [tabId]
+  easy-webbridge fill <browserId> <selector> <value> [tabId]
+  easy-webbridge screenshot <browserId> [tabId]`);
 }
 
 async function command(browserId, action, args = {}) {

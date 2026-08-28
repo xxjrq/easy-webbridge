@@ -30,7 +30,7 @@ async function connectExtension(url, token, hello, onCommand) {
 }
 
 test("routes commands to the selected browser instance", async () => {
-  const dataDir = await mkdtemp(join(tmpdir(), "agent-browser-bridge-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
   const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });
   const url = `http://${bridge.host}:${bridge.port}`;
   const received = [];
@@ -67,7 +67,7 @@ test("routes commands to the selected browser instance", async () => {
 });
 
 test("rejects HTTP and WebSocket clients without the token", async () => {
-  const dataDir = await mkdtemp(join(tmpdir(), "agent-browser-bridge-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
   const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });
   try {
     const response = await fetch(`http://${bridge.host}:${bridge.port}/v1/browsers`);
