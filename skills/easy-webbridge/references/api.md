@@ -56,8 +56,8 @@ Content-Type: application/json
 ### Browser and CDP
 
 - `reload_extension`: `{}` (reloads this profile's extension and reconnects automatically)
-- `screenshot`: `{ "tabId": 123, "format": "png", "selector": "@e2", "fullPage": false }`
-- `save_as_pdf`: `{ "tabId": 123, "paper_format": "a4", "landscape": false, "scale": 1, "print_background": true }`
+- `screenshot`: `{ "tabId": 123, "format": "png", "selector": "@e2", "fullPage": false, "path": "/absolute/output.png" }`
+- `save_as_pdf`: `{ "tabId": 123, "paper_format": "a4", "landscape": false, "scale": 1, "print_background": true, "path": "/absolute/output.pdf" }`
 - `network`: `{ "tabId": 123, "cmd": "start" }`
 - `network`: `{ "tabId": 123, "cmd": "list", "filter": "api", "limit": 200 }`
 - `network`: `{ "tabId": 123, "cmd": "detail", "requestId": "123.45", "includeBody": true }`

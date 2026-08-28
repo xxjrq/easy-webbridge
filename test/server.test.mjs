@@ -107,6 +107,7 @@ test("persists screenshots and PDFs returned by an extension", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
   const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });
   const url = `http://${bridge.host}:${bridge.port}`;
+  const customPdfPath = join(dataDir, "custom", "page.pdf");
   const socket = await connectExtension(url, bridge.token, { browserId: "browser-files" }, (client, message) => {
     const isPdf = message.action === "save_as_pdf";
     const mime = isPdf ? "application/pdf" : "image/png";
@@ -115,7 +116,7 @@ test("persists screenshots and PDFs returned by an extension", async () => {
       type: "result",
       commandId: message.commandId,
       ok: true,
-      result: { dataUrl: `data:${mime};base64,${data}` },
+      result: { dataUrl: `data:${mime};base64,${data}`, requestedPath: isPdf ? customPdfPath : "" },
     }));
   });
 
@@ -129,6 +130,7 @@ test("persists screenshots and PDFs returned by an extension", async () => {
       const payload = await response.json();
       assert.equal(response.status, 200);
       assert.equal(payload.result.path.endsWith(action === "save_as_pdf" ? ".pdf" : ".png"), true);
+      if (action === "save_as_pdf") assert.equal(payload.result.path, customPdfPath);
       assert.equal((await readFile(payload.result.path)).length > 0, true);
     }
   } finally {

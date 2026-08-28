@@ -411,8 +411,14 @@ function scrollPage(options) {
   return { x: window.scrollX, y: window.scrollY };
 }
 
-function evaluateCode(code) {
-  return (0, eval)(code);
+async function evaluateCode(code) {
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  try {
+    return await new AsyncFunction(`return (${code});`)();
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return new AsyncFunction(code)();
+  }
 }
 
 async function executeScript(tabId, func, args = [], world = "ISOLATED") {
@@ -558,6 +564,7 @@ async function captureScreenshot(tab, args) {
     url: tab.url,
     selector: args.selector || "",
     fullPage: Boolean(args.fullPage),
+    requestedPath: String(args.path || ""),
   };
 }
 
@@ -590,6 +597,7 @@ async function saveAsPdf(tab, args) {
     tabId: tab.id,
     url: tab.url,
     title: tab.title || "page",
+    requestedPath: String(args.path || ""),
   };
 }
 

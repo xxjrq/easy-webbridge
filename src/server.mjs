@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
 import { BrowserRegistry } from "./registry.mjs";
@@ -61,11 +61,12 @@ async function persistArtifact(result, dataDir, browserId, action) {
   const outputDir = join(dataDir, extension === "pdf" ? "pdf" : "screenshots");
   await mkdir(outputDir, { recursive: true });
   const filename = `${browserId}-${Date.now()}-${randomBytes(4).toString("hex")}.${extension}`;
-  const outputPath = join(outputDir, filename);
+  const outputPath = result.requestedPath ? resolve(result.requestedPath) : join(outputDir, filename);
+  await mkdir(dirname(outputPath), { recursive: true });
   const bytes = Buffer.from(match[3], "base64");
   if (bytes.length > 100 * 1024 * 1024) throw new Error(`${action} output exceeds 100 MB`);
   await writeFile(outputPath, bytes, { mode: 0o600 });
-  const { dataUrl: _dataUrl, ...rest } = result;
+  const { dataUrl: _dataUrl, requestedPath: _requestedPath, ...rest } = result;
   return { ...rest, path: outputPath, sizeBytes: bytes.length, mimeType: extension === "pdf" ? "application/pdf" : `image/${match[2]}` };
 }
 
