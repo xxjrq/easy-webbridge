@@ -1,0 +1,24 @@
+name: easy-webbridge
+slug: easy-webbridge-browser
+version: 0.3.2
+category: 浏览器自动化 / Browser Automation
+author: xxjrq
+description: 让 AI 直接操作已经登录的真实浏览器，无需新开窗口或重复登录。支持 Chrome、Edge、QQ 浏览器与 Chromium，适合网页自动化、后台操作、网页分析和授权上传；也兼容 EasyBR 多开环境。
+trigger_words:
+  - AI 操作已登录浏览器
+  - 控制本地浏览器
+  - 浏览器自动化
+  - 上传文件到网页
+  - 抖音合集封面上传
+  - AI Agent 控制浏览器
+  - 保留登录态操作网页
+  - 浏览器多环境管理
+tags:
+  - browser-automation
+  - easy-webbridge
+  - AI-browser-control
+  - authenticated-browser-session
+  - 文件上传
+  - CDP
+license: MIT
+repository: https://github.com/xxjrq/easy-webbridge

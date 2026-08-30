@@ -10,6 +10,10 @@ Authorization: Bearer <token>
 
 Default endpoint: `http://127.0.0.1:17777`.
 
+## Session policy
+
+Page-opening workflows default to one task-scoped session. Reuse the same session and current tab for sequential steps, group any required extra tabs under the same `groupTitle`, and call `close_session` in cleanup. Independent business Skills must namespace sessions by Skill and run so concurrent jobs cannot close each other's tabs.
+
 ## Browser discovery
 
 ```http
@@ -44,6 +48,8 @@ Content-Type: application/json
 - `close_tab`: `{ "tabId": 123 }`
 - `close_session`: `{ "session": "research" }`
 - `navigate`: `{ "url": "https://example.com", "newTab": true, "active": true, "session": "research", "groupTitle": "Research" }`
+
+The bundled CLI automatically assigns a site-based group when `navigate --new-tab` omits `--session`. Business Skills should pass an explicit namespaced session instead of relying on that generic fallback.
 
 ### DOM
 

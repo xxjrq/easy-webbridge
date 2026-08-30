@@ -54,11 +54,33 @@ function usage() {
   easy-webbridge start
   easy-webbridge status
   easy-webbridge command <browserId> <action> [args-json]
-  easy-webbridge navigate <browserId> <url> [--new-tab]
+  easy-webbridge navigate <browserId> <url> [--new-tab] [--session <name>] [--group-title <title>] [--ungrouped]
   easy-webbridge snapshot <browserId> [tabId]
   easy-webbridge click <browserId> <selector> [tabId]
   easy-webbridge fill <browserId> <selector> <value> [tabId]
   easy-webbridge screenshot <browserId> [tabId]`);
+}
+
+function navigateArgs(url, flags) {
+  const options = { url, newTab: flags.includes("--new-tab") };
+  const valueAfter = (name) => {
+    const index = flags.indexOf(name);
+    if (index < 0) return null;
+    const value = flags[index + 1];
+    if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
+    return value;
+  };
+  const requestedSession = valueAfter("--session");
+  const requestedTitle = valueAfter("--group-title");
+  if (options.newTab && !flags.includes("--ungrouped")) {
+    const hostname = new URL(url).hostname;
+    options.session = (requestedSession || `easy-webbridge:${hostname}`).slice(0, 120);
+    options.groupTitle = (requestedTitle || hostname).slice(0, 80);
+  } else if (requestedSession) {
+    options.session = requestedSession;
+    if (requestedTitle) options.groupTitle = requestedTitle;
+  }
+  return options;
 }
 
 async function command(browserId, action, args = {}) {
@@ -82,9 +104,9 @@ async function main() {
     if (!browserId || !action) throw new Error("browserId and action are required");
     result = await command(browserId, action, JSON.parse(argsJson));
   } else if (verb === "navigate") {
-    const [browserId, url] = args;
+    const [browserId, url, ...flags] = args;
     if (!browserId || !url) throw new Error("browserId and url are required");
-    result = await command(browserId, "navigate", { url, newTab: args.includes("--new-tab") });
+    result = await command(browserId, "navigate", navigateArgs(url, flags));
   } else if (["snapshot", "screenshot"].includes(verb)) {
     const [browserId, tabId] = args;
     if (!browserId) throw new Error("browserId is required");

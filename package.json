@@ -1,7 +1,7 @@
 {
   "name": "easy-webbridge",
-  "version": "0.3.0",
-  "description": "Open local WebBridge for AI agents to control multiple Chromium browser profiles.",
+  "version": "0.3.2",
+  "description": "AI browser bridge for authenticated real Chromium browser sessions, including EasyBR multi-profiles.",
   "type": "module",
   "private": false,
   "license": "MIT",
@@ -23,6 +23,8 @@
   "keywords": [
     "agent",
     "browser-automation",
+    "ai-browser-automation",
+    "authenticated-browser-session",
     "chrome-extension",
     "codex",
     "claude-code",

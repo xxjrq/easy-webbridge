@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Easy WebBridge",
-  "version": "0.3.0",
-  "description": "让 AI Agent 使用当前浏览器的登录状态，并控制多个 Chromium 环境。",
+  "version": "0.3.2",
+  "description": "让 AI Agent 直接操作已登录的真实 Chromium 浏览器，也兼容 EasyBR 多开环境。",
   "permissions": [
     "activeTab",
     "tabs",
