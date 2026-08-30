@@ -1,6 +1,6 @@
 ---
 name: easy-webbridge
-description: 让 AI Agent 直接操作已经登录的真实浏览器，保留现有登录态，按 browserId 精确控制 Chrome、Edge、QQ 浏览器和 Chromium 实例。Use when an agent needs browser automation, authenticated admin work, web research, file upload, screenshots, DOM/page inspection, or CDP commands in an existing browser session. Also supports EasyBR multi-profile environments.
+description: 让 AI Agent 直接操作已经登录的真实浏览器，保留现有登录态，按 browserId 精确控制 Chrome、Edge、QQ 浏览器和 Chromium 实例；所有需要打开页面的任务默认创建独立标签组并复用组内页面，避免散落大量标签页。Use when an agent needs browser automation, authenticated admin work, web research, file upload, screenshots, DOM/page inspection, or CDP commands in an existing browser session. Also supports EasyBR multi-profile environments.
 ---
 
 # Easy WebBridge Browser
@@ -12,6 +12,17 @@ description: 让 AI Agent 直接操作已经登录的真实浏览器，保留现
 ## 首先理解它适合什么
 
 这是给已登录后台、网页研究、表单填写、文件上传和实时页面分析准备的浏览器控制 Skill。每个已连接浏览器都有独立的 `browserId`；Agent 必须选择明确目标，绝不会把命令广播给所有浏览器。
+
+## 默认工作方式
+
+凡是需要打开或跳转网页的任务，默认创建一个任务专属标签组，不把页面散落在浏览器各处：
+
+1. 为本次任务创建一个稳定、带业务前缀的 `session`，并设置简短可读的 `groupTitle`。
+2. 第一次进入任务时只新开一个标签页；后续连续步骤复用组内当前标签页。
+3. 只有确实需要同时对照多个页面时才新开标签页，并继续放进同一个任务组。
+4. 任务结束或失败时只执行 `close_session` 关闭本任务创建的组；不得关闭用户原有标签页或其他任务组。
+
+只有只读的浏览器列表检查不会建组；只有用户明确要求使用未分组页面时才允许 `--ungrouped`。用户明确要求操作当前已有标签页时，可以借用该页，但不得把它登记为任务资产后误关。
 
 ## 已实测浏览器
 
@@ -103,13 +114,30 @@ The script reads the token from `~/.easy-webbridge/bridge-token`. Override with 
 - If multiple browsers are online and the target is ambiguous, ask which browser to use before changing page state.
 - Keep the same `browserId` throughout a task unless the user explicitly switches.
 
-## Default to one task group
+## 按任务分组执行
 
-- Treat grouping as the default for every workflow that opens pages. Create one stable `session` per task and one short human-readable `groupTitle`.
-- Reuse the session's current tab for sequential steps. Open extra tabs only when the task genuinely needs parallel pages, and put them in the same session.
-- Keep different business Skills in different sessions. Use a namespaced value such as `<skill-slug>-<run-id>` so concurrent projects cannot close one another's tabs.
-- Close only the owned session when the task finishes. Never close the user's pre-existing tabs.
-- Read-only browser discovery (`list`) does not create a group. Use an ungrouped new tab only when the user explicitly requests it.
+- 将分组视为打开页面类工作流的默认行为，而不是可选优化。
+- 使用 `<skill-slug>-<run-id>` 形式的 `session`，保证不同业务 Skill、不同运行批次互不干扰。
+- 同一个任务始终复用同一 `browserId`、`session` 和 `groupTitle`。
+- 不为每一步都创建新标签页；顺序步骤使用相同 `session` 且不传 `--new-tab`。
+- 需要并行对照时才传 `--new-tab`，并继续使用同一个 `session`。
+- 在 `finally` 中关闭本任务拥有的 `session`；借用的用户标签页和其他任务组必须保留。
+
+标准执行顺序：
+
+```bash
+# 首次打开：创建任务组和第一个标签页
+node scripts/easy-webbridge.mjs navigate <browserId> https://example.com \
+  --new-tab --session <skill-slug>-<run-id> --group-title "任务名称"
+
+# 后续顺序步骤：复用组内当前标签页
+node scripts/easy-webbridge.mjs navigate <browserId> https://example.com/next \
+  --session <skill-slug>-<run-id>
+
+# 只有需要同时保留页面时才在同组增加标签页
+node scripts/easy-webbridge.mjs navigate <browserId> https://example.org \
+  --new-tab --session <skill-slug>-<run-id> --group-title "任务名称"
+```
 
 ## Operate pages
 
@@ -121,7 +149,7 @@ node scripts/easy-webbridge.mjs navigate <browserId> https://example.com \
   --new-tab --session research-123 --group-title "网页研究"
 ```
 
-When `navigate --new-tab` omits `--session`, the CLI automatically groups the tab by site. Business Skills must still pass their own namespaced session explicitly.
+When `navigate --new-tab` omits `--session`, the CLI automatically groups the tab by site. Business Skills must still pass their own namespaced session explicitly so all pages from one run remain in one task group.
 
 Read a semantic snapshot before interacting:
 

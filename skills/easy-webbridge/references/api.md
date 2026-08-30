@@ -12,7 +12,7 @@ Default endpoint: `http://127.0.0.1:17777`.
 
 ## Session policy
 
-Page-opening workflows default to one task-scoped session. Reuse the same session and current tab for sequential steps, group any required extra tabs under the same `groupTitle`, and call `close_session` in cleanup. Independent business Skills must namespace sessions by Skill and run so concurrent jobs cannot close each other's tabs.
+Page-opening workflows must default to one task-scoped session. On the first navigation, set `newTab: true`, `session`, and `groupTitle` to create one task group. On later sequential navigations, keep the same `session` and omit `newTab` so Easy WebBridge reuses the group's current tab. Set `newTab: true` again only when simultaneous pages are necessary, and keep those tabs under the same `groupTitle`. Call `close_session` in `finally`. Independent business Skills must namespace sessions by Skill and run so concurrent jobs cannot close each other's tabs.
 
 ## Browser discovery
 
@@ -48,6 +48,7 @@ Content-Type: application/json
 - `close_tab`: `{ "tabId": 123 }`
 - `close_session`: `{ "session": "research" }`
 - `navigate`: `{ "url": "https://example.com", "newTab": true, "active": true, "session": "research", "groupTitle": "Research" }`
+- `navigate`: `{ "url": "https://example.com/next", "session": "research" }` (reuse the session's current tab)
 
 The bundled CLI automatically assigns a site-based group when `navigate --new-tab` omits `--session`. Business Skills should pass an explicit namespaced session instead of relying on that generic fallback.
 
