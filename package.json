@@ -28,6 +28,8 @@
     "chrome-extension",
     "codex",
     "claude-code",
+    "opencode",
+    "workbuddy",
     "skill"
   ]
 }
