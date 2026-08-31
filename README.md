@@ -234,6 +234,7 @@ Playwright 更适合隔离、可重复的测试环境；Easy WebBridge 让 AI �
 ## 文档
 
 - [完整中文使用教程](docs/zh-CN/完整使用教程.md)
+- [100 个业务 Skill 落地方案](docs/zh-CN/100个业务Skill落地方案.md)
 - [HTTP API 与命令参考](skills/easy-webbridge/references/api.md)
 - [安全说明](SECURITY.md)
 
