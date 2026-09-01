@@ -59,6 +59,10 @@ node cli/easy-webbridge.mjs start
 
 Open `chrome://extensions` in each target browser or EasyBR profile, enable Developer mode, then load the repository's `extension/` directory. The local bridge listens only on `127.0.0.1:17777`, and each connected browser receives its own `browserId`.
 
+### Optional start at login
+
+Start at login is off by default. Running `node cli/easy-webbridge.mjs start` before a task is enough and is safe to repeat. If you want the Bridge online after sign-in, add `node src/server.mjs` as a user login item: use **System Settings → General → Login Items** on macOS or **Task Scheduler → At log on** on Windows. The extension cannot start Node.js without operating-system permission; remove the login item to return to on-demand startup. Verify with `node cli/easy-webbridge.mjs status`.
+
 ```bash
 node cli/easy-webbridge.mjs list
 ```

@@ -92,6 +92,17 @@ EasyBR 是可选的兼容集成场景。每个多开环境保留独立 Cookie、
 
 ## Connect
 
+### 获取并安装扩展
+
+扩展源码和图标都在公开仓库的 [`extension/`](https://github.com/xxjrq/easy-webbridge/tree/main/extension) 目录。当前推荐加载源码目录，不依赖第三方 CRX 下载站：
+
+1. 下载或克隆 <https://github.com/xxjrq/easy-webbridge>。
+2. 在目标 Chrome、Edge、QQ 浏览器或 Chromium 中打开 `chrome://extensions`。
+3. 打开“开发者模式”，选择“加载未打包的扩展程序”，选仓库里的 `extension/` 目录。
+4. 每个需要控制的浏览器 Profile 都要单独加载一次；扩展不会复制或清空登录数据。
+
+如果仓库提供 Release/CRX，可从同一仓库的 Releases 页面下载；官方 Chrome、Edge 拦截外部 CRX 时，仍使用上面的 `extension/` 源码加载方式。安装后打开扩展设置页，看到“已连接”并能读到 `browserId`，才算连接完成。
+
 1. Start or check the local bridge:
 
 ```bash
@@ -106,6 +117,16 @@ node scripts/easy-webbridge.mjs list
 ```
 
 The script reads the token from `~/.easy-webbridge/bridge-token`. Override with `EASY_WEBBRIDGE_URL` and `EASY_WEBBRIDGE_TOKEN` only when the user has configured a different bridge.
+
+### 是否需要开机启动（可选）
+
+默认不需要。业务 Skill 执行前运行 `start` 即可；它会检查服务是否已在运行，已运行时不会重复启动。只有希望电脑登录后始终保持 Bridge 在线时，才配置系统登录项。
+
+- **macOS**：使用“系统设置 → 通用 → 登录项”添加一个启动脚本，脚本内容为 `cd /绝对路径/easy-webbridge && exec node src/server.mjs`。启用“后台运行”后重新登录，用 `node cli/easy-webbridge.mjs status` 验证。不要把 `bridge-token` 写进脚本或日志。
+- **Windows**：在“任务计划程序”新建“登录时运行”任务，程序填写 Node.js 的完整路径，参数填写 `src/server.mjs`，起始位置填写 Easy WebBridge 仓库目录；用 `node cli/easy-webbridge.mjs status` 验证。
+- **关闭**：删除对应的登录项/计划任务即可。关闭开机启动不会卸载扩展，也不会删除登录态或 Token。
+
+浏览器扩展不能绕过操作系统权限自动启动本机 Node 服务；是否开机启动应由用户自行选择。无论是否开机启动，Bridge 都只监听 `127.0.0.1`。
 
 ## Select a browser
 

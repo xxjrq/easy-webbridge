@@ -1,4 +1,4 @@
 interface:
   display_name: "Easy WebBridge"
-  short_description: "分组控制多个已登录浏览器环境"
-  default_prompt: "使用 $easy-webbridge 选择已连接浏览器，默认按任务创建独立标签组并优先复用组内当前标签页。"
+  short_description: "分组控制已登录浏览器，可选开机启动"
+  default_prompt: "使用 $easy-webbridge 选择已连接浏览器，默认按任务创建独立标签组并优先复用组内当前标签页；需要长期在线时再配置系统开机启动。"

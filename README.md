@@ -99,6 +99,10 @@ node cli/easy-webbridge.mjs start
 
 当前版本直接在 `chrome://extensions` 中使用“加载未打包的扩展程序”选择仓库里的 `extension/` 目录即可。`dist/` 中保留的 `0.3.0` CRX 是历史安装包；本次仅更新 Skill、文档、图标和扩展元数据，不重新打包 CRX。
 
+### 要不要开机启动
+
+默认不用开机启动。业务 Skill 开始工作时运行 `node cli/easy-webbridge.mjs start` 即可，已运行的服务不会重复启动。若希望电脑登录后 Bridge 一直在线，可由用户在系统登录项中添加 `node src/server.mjs`：macOS 用“系统设置 → 通用 → 登录项”，Windows 用“任务计划程序 → 登录时运行”。扩展本身不能绕过操作系统权限启动 Node 服务；关闭登录项即可恢复按需启动。
+
 查看在线环境：
 
 ```bash

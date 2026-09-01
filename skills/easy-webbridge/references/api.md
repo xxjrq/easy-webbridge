@@ -1,5 +1,9 @@
 # Easy WebBridge API
 
+## Runtime startup
+
+The extension connects to the local Bridge; it does not start Node.js by itself. Start the Bridge on demand with `node cli/easy-webbridge.mjs start`, or configure an optional OS login item that runs `node src/server.mjs`. Keep the service bound to `127.0.0.1` and verify it with `node cli/easy-webbridge.mjs status`.
+
 ## Authentication
 
 Send the token as:

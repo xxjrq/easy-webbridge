@@ -1,9 +1,9 @@
 name: easy-webbridge
 slug: easy-webbridge-browser
-version: 0.3.2
+version: 1.0.0
 category: 浏览器自动化 / Browser Automation
 author: xxjrq
-description: 让 AI 直接操作已经登录的真实浏览器，无需新开窗口或重复登录。支持 Chrome、Edge、QQ 浏览器与 Chromium，适合网页自动化、后台操作、网页分析和授权上传；也兼容 EasyBR 多开环境。
+description: 让 AI 直接操作已经登录的真实浏览器，无需新开窗口或重复登录。支持 Chrome、Edge、QQ 浏览器与 Chromium，适合网页自动化、后台操作、网页分析和授权上传；也兼容 EasyBR 多开环境，并提供可选的系统开机启动方式。
 trigger_words:
   - AI 操作已登录浏览器
   - 控制本地浏览器
