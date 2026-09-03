@@ -1,15 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">Easy WebBridge</title>
-  <desc id="desc">A real-browser window connected through a bridge</desc>
-  <rect width="128" height="128" rx="30" fill="#06143F"/>
-  <rect x="23" y="27" width="82" height="74" rx="17" fill="#071A4D" stroke="#1264F5" stroke-width="8"/>
-  <path d="M23 47h82" stroke="#1264F5" stroke-width="7"/>
-  <circle cx="32" cy="37" r="4.5" fill="#1264F5"/>
-  <circle cx="45" cy="37" r="4.5" fill="#1264F5"/>
-  <circle cx="58" cy="37" r="4.5" fill="#1264F5"/>
-  <path d="M35 72c7 5 16 8 29 8s22-3 29-8" fill="none" stroke="#1DE2D0" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="35" cy="72" r="9" fill="#1DE2D0"/>
-  <circle cx="35" cy="72" r="4" fill="#071A4D"/>
-  <circle cx="93" cy="72" r="9" fill="#1DE2D0"/>
-  <circle cx="93" cy="72" r="4" fill="#071A4D"/>
+  <desc id="desc">An E-shaped bridge connecting two endpoints</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#174CFF"/>
+      <stop offset="0.55" stop-color="#2720D8"/>
+      <stop offset="1" stop-color="#5A0BC8"/>
+    </linearGradient>
+    <linearGradient id="letter" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D9F0FF"/>
+      <stop offset="1" stop-color="#D9C6FF"/>
+    </linearGradient>
+    <linearGradient id="bridge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#258CFF"/>
+      <stop offset="1" stop-color="#19E7FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#bg)"/>
+  <rect x="23" y="24" width="15" height="80" rx="7.5" fill="url(#letter)"/>
+  <rect x="23" y="24" width="80" height="22" rx="11" fill="url(#letter)"/>
+  <rect x="23" y="82" width="80" height="22" rx="11" fill="url(#letter)"/>
+  <path d="M35 74c8-4 17-6 30-6s22 2 30 6" fill="none" stroke="url(#bridge)" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="35" cy="74" r="10" fill="#258CFF"/>
+  <circle cx="95" cy="74" r="10" fill="#19E7FF"/>
 </svg>
