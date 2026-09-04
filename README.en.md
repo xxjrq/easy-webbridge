@@ -12,7 +12,7 @@
 
 </div>
 
-Website and support: [EasyBR](https://www.ebrower.com/) · [Easy WebBridge help](https://www.ebrower.com/helperdoc/easy-webbridge.html) · [GitHub repository](https://github.com/xxjrq/easy-webbridge)
+Website and support: [EasyBR](https://www.ebrower.com/) · [Easy WebBridge help](https://www.ebrower.com/helperdoc/easy-webbridge.html) · [GitHub primary repository](https://github.com/xxjrq/easy-webbridge) · [Gitee mirror](https://gitee.com/xxjrq/easy-webbridge)
 
 ## Why use it
 
@@ -57,6 +57,12 @@ git clone https://github.com/xxjrq/easy-webbridge.git
 cd easy-webbridge
 npm install
 node cli/easy-webbridge.mjs start
+```
+
+If GitHub is unavailable, use the Gitee mirror instead:
+
+```bash
+git clone https://gitee.com/xxjrq/easy-webbridge.git
 ```
 
 Open `chrome://extensions` in each target browser or EasyBR profile, enable Developer mode, then load the repository's `extension/` directory. The local bridge listens only on `127.0.0.1:17777`, and each connected browser receives its own `browserId`.

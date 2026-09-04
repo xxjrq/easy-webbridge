@@ -15,7 +15,7 @@
 
 </div>
 
-官网与支持：[EasyBR 官网](https://www.ebrower.com/) · [Easy WebBridge 使用帮助](https://www.ebrower.com/helperdoc/easy-webbridge.html) · [GitHub 仓库](https://github.com/xxjrq/easy-webbridge)
+官网与支持：[EasyBR 官网](https://www.ebrower.com/) · [Easy WebBridge 使用帮助](https://www.ebrower.com/helperdoc/easy-webbridge.html) · [GitHub 主仓库](https://github.com/xxjrq/easy-webbridge) · [Gitee 备用镜像](https://gitee.com/xxjrq/easy-webbridge)
 
 ## 为什么装它
 
@@ -91,11 +91,17 @@ npm install
 node cli/easy-webbridge.mjs start
 ```
 
+GitHub 无法访问时，可改用 Gitee 备用镜像：
+
+```bash
+git clone https://gitee.com/xxjrq/easy-webbridge.git
+```
+
 然后在目标浏览器中打开 `chrome://extensions`：
 
 1. 开启“开发者模式”。
 2. 点击“加载未打包的扩展程序”。
-3. 选择仓库中的 `extension/` 目录。
+3. 选择仓库中的 `extension/` 目录。无论从 GitHub 还是 Gitee 下载，选择的都是这个目录。
 4. 扩展自动连接本机 Bridge；每个浏览器环境都有独立 `browserId`，EasyBR 环境还会自动识别名称和颜色。
 5. 需要连接多个账号或浏览器时，在每个目标环境中重复加载扩展。
 

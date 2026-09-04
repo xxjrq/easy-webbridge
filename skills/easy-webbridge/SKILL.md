@@ -94,12 +94,13 @@ EasyBR 是可选的兼容集成场景。每个多开环境保留独立 Cookie、
 
 ### 获取并安装扩展
 
-扩展源码和图标都在公开仓库的 [`extension/`](https://github.com/xxjrq/easy-webbridge/tree/main/extension) 目录。当前推荐加载源码目录，不依赖第三方 CRX 下载站：
+扩展源码和图标都在公开仓库的 `extension/` 目录。GitHub 是主仓库，Gitee 是备用镜像；如果 GitHub 访问不稳定，可以从 Gitee 下载同一份源码：
 
-1. 下载或克隆 <https://github.com/xxjrq/easy-webbridge>。
-2. 在目标 Chrome、Edge、QQ 浏览器或 Chromium 中打开 `chrome://extensions`。
-3. 打开“开发者模式”，选择“加载未打包的扩展程序”，选仓库里的 `extension/` 目录。
-4. 每个需要控制的浏览器 Profile 都要单独加载一次；扩展不会复制或清空登录数据。
+1. 优先从 <https://github.com/xxjrq/easy-webbridge> 下载或克隆；备用地址是 <https://gitee.com/xxjrq/easy-webbridge>，也可以直接下载 <https://gitee.com/xxjrq/easy-webbridge/repository/archive/main.zip>。
+2. 解压下载的文件（如果下载的是 ZIP），找到里面的 `extension/` 文件夹。
+3. 在目标 Chrome、Edge、QQ 浏览器或 Chromium 中打开 `chrome://extensions`。
+4. 打开“开发者模式”，选择“加载未打包的扩展程序”，选仓库里的 `extension/` 目录。
+5. 每个需要控制的浏览器 Profile 都要单独加载一次；扩展不会复制或清空登录数据。
 
 如果仓库提供 Release/CRX，可从同一仓库的 Releases 页面下载；官方 Chrome、Edge 拦截外部 CRX 时，仍使用上面的 `extension/` 源码加载方式。安装后打开扩展设置页，看到“已连接”并能读到 `browserId`，才算连接完成。
 
