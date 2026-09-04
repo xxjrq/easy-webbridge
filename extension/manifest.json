@@ -3,6 +3,7 @@
   "name": "Easy WebBridge",
   "version": "0.3.2",
   "description": "让 AI Agent 直接操作已登录的真实 Chromium 浏览器，也兼容 EasyBR 多开环境。",
+  "homepage_url": "https://www.ebrower.com/helperdoc/easy-webbridge.html",
   "permissions": [
     "activeTab",
     "tabs",

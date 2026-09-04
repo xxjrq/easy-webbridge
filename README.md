@@ -15,6 +15,8 @@
 
 </div>
 
+官网与支持：[EasyBR 官网](https://www.ebrower.com/) · [Easy WebBridge 使用帮助](https://www.ebrower.com/helperdoc/easy-webbridge.html) · [GitHub 仓库](https://github.com/xxjrq/easy-webbridge)
+
 ## 为什么装它
 
 Easy WebBridge 让 AI 操作你已经打开、已经登录的浏览器。账号的 Cookie、Local Storage 和登录态继续保留在本地；每个已连接浏览器都有独立 `browserId`，一条命令只会发给你指定的目标。

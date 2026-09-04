@@ -12,6 +12,8 @@
 
 </div>
 
+Website and support: [EasyBR](https://www.ebrower.com/) · [Easy WebBridge help](https://www.ebrower.com/helperdoc/easy-webbridge.html) · [GitHub repository](https://github.com/xxjrq/easy-webbridge)
+
 ## Why use it
 
 Easy WebBridge gives each connected browser profile a distinct `browserId`, so an agent works in one explicitly selected environment without broadcasting commands. It keeps the authenticated browser session you already use, making it practical for authorized dashboard work, research, form filling, uploads, and real-time page analysis. Publishing, sending, payments, deletion, and account-security changes always require explicit user approval.

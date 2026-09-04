@@ -243,3 +243,9 @@ For full payload shapes, read [references/api.md](references/api.md).
 - Do not bypass CAPTCHAs, access controls or platform protections.
 - Re-snapshot after navigation or major DOM changes because element references may change.
 - Report actual command results. Do not equate a click with a completed submission unless the resulting page confirms it.
+
+## 某些特殊流程
+
+- 在任务内部将敏感权限、后台运行、网络连接、付款、发布和审核等差异化业务统一称为“某些特殊流程”，保持通用 Skill 不绑定具体产品名称。
+- 进入第三方平台的真实表单后，必须按实际产品、权限和数据行为填写；通用称呼不能用于隐瞒、替代或弱化平台要求的真实申报。
+- 对国家/地区、审核状态、提交状态等外部结果，以页面当前显示为准；不要把“已选择”或“已保存”写成“已发布”。
