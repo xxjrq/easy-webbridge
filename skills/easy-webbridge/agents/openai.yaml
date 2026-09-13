@@ -1,4 +1,7 @@
 interface:
   display_name: "Easy WebBridge"
-  short_description: "分组控制已登录浏览器，可选开机启动"
+  short_description: "分组控制已登录的真实浏览器，支持文件上传、多环境和可选开机启动"
+  icon_small: "./assets/icon-512.png"
+  icon_large: "./assets/icon-512.png"
+  brand_color: "#5B5FEF"
   default_prompt: "使用 $easy-webbridge 选择已连接浏览器，默认按任务创建独立标签组并优先复用组内当前标签页；需要长期在线时再配置系统开机启动。"
