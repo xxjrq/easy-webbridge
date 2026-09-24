@@ -66,6 +66,37 @@ test("routes commands to the selected browser instance", async () => {
   }
 });
 
+test("result budgets summarize oversized results without echoing values", async () => {
+  const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
+  const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });
+  const url = `http://${bridge.host}:${bridge.port}`;
+  const socket = await connectExtension(url, bridge.token, { browserId: "browser-budget" }, (client, message) => {
+    client.send(JSON.stringify({
+      type: "result",
+      commandId: message.commandId,
+      ok: true,
+      result: { secret: "do-not-echo", padding: "x".repeat(2_000) },
+    }));
+  });
+
+  try {
+    const response = await fetch(`${url}/v1/browsers/browser-budget/commands`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${bridge.token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "snapshot", args: { resultBudget: { maxBytes: 1_000, mode: "summary" } } }),
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.result.truncated, true);
+    assert.equal(payload.result.type, "object");
+    assert.equal(JSON.stringify(payload.result).includes("do-not-echo"), false);
+  } finally {
+    socket.close();
+    await bridge.close();
+    await rm(dataDir, { recursive: true, force: true });
+  }
+});
+
 test("rejects HTTP and WebSocket clients without the token", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "easy-webbridge-"));
   const bridge = await createBridgeServer({ port: 0, token: "test-token", dataDir });

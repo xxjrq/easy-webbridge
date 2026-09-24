@@ -1,6 +1,6 @@
 {
   "name": "easy-webbridge",
-  "version": "0.3.2",
+  "version": "0.6.0",
   "description": "AI browser bridge for authenticated real Chromium browser sessions, including EasyBR multi-profiles.",
   "homepage": "https://www.ebrower.com/helperdoc/easy-webbridge.html",
   "bugs": {

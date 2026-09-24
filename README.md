@@ -36,6 +36,14 @@ Codex / Claude Code / AI Agent
 
 这不是让 AI 盲目批量操作的工具，而是让它在**你选定的已授权浏览器环境**中，把重复网页工作做得更稳、更省事。
 
+v0.6.0 增加受限的正常键盘输入（`press_key`/`key_combo`）、有界 batch 动作、动作后断言、快照/命令结果预算与明确 OOPIF/iframe 上传边界；键盘输入只发送常见 CDP key event，不修改指纹、不加入随机轨迹、不绕过 CAPTCHA。Agent 的常规读取建议使用 `--compact`、明确 scope 和较小返回上限。Native 点击仅限经命中测试的顶层元素，并保证 CDP 鼠标按下/抬起配对；默认仍使用 DOM 点击。
+
+浏览器画像采用“用户选定 Profile”边界：稳定的隐私、语言、时区或 EasyBR 配置由浏览器/Profile 管理，Bridge 只报告当前 Profile，不提供画像变更或 stealth 接口。它不会修改 `navigator.webdriver`、Canvas/WebGL/Audio、UA、时区、代理/IP，也不会加入随机人类轨迹。
+
+`environment_info`（别名 `browser_profile`）可只读诊断当前顶层页面的实际运行时画像，包括 UA、platform、语言、时区、硬件并发数、屏幕/DPR 和 webdriver 状态，并返回 `mutated:false`、`source:"browser-runtime"`。该诊断不读取页面正文、Cookie 或 Token，也不接受覆盖参数，不用于规避检测。
+
+尚未实现的后续方向包括语义定位器与 stale-ref 检测、通用动作差异回读、结构化 trace、键盘/Select/Form 原语，以及按域收敛扩展权限。v0.5.0 的 batch 已支持有限的动作后 selector/text/url 断言，但不等同于完整的 DOM 差异回读。当前扩展保留 `<all_urls>` 和 debugger 等高权限，能力诊断只报告现状，不会扩大授权。关闭 Shadow DOM、通用跨域 OOPIF、跨 frame 文件上传、可信键盘输入和验证码/安全验证绕过均不支持；不宣称与 Playwright 或 Browser Use 全面等价。
+
 ## 它解决的不是“能不能点网页”
 
 普通自动化通常会新开浏览器或准备独立 Profile。Easy WebBridge 的重点是连接你正在使用的浏览器：AI 能看到你已经登录后的真实页面，并在一个明确的浏览器环境中继续任务。
@@ -74,7 +82,7 @@ AI 可以在已登录的控制台中检查待补资料、版本信息、截图�
 
 ### 3. 网页研究与实时页面分析
 
-读取真实 DOM、语义快照、当前页面状态和截图；分析 SEO、表单、页面内容、后台状态或数据差异，再根据实际页面继续完成下一步。
+读取真实 DOM、语义快照、当前页面状态和截图；快照支持可见/隐藏元素、CSS 或坐标区域、数量分页、文字和角色筛选；分析 SEO、表单、页面内容、后台状态或数据差异，再根据实际页面继续完成下一步。
 
 ### 4. EasyBR 多开环境
 

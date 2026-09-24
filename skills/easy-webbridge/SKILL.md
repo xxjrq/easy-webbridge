@@ -39,6 +39,7 @@ description: 让 AI Agent 直接操作已经登录的真实浏览器，保留现
 - 复用已登录页面、Cookie 和 Local Storage，不启动干净的临时浏览器。
 - 打开、读取、分析、点击、填写、滚动和执行页面 JavaScript。
 - 截图、读取 DOM/语义快照、检查页面状态、抓取网络请求、导出 PDF。
+- 按 frame 定向发现与交互，遍历开放 Shadow DOM，等待页面状态，并检查扩展权限能力。
 - 上传文件、触发下载、管理 Cookie，以及发送受控 CDP 命令。
 - 为一个任务创建浏览器标签组，在多个已连接浏览器中精确路由操作。
 
@@ -81,14 +82,14 @@ description: 让 AI Agent 直接操作已经登录的真实浏览器，保留现
 ```
 
 ```text
-不要启动新的 Chrome。使用我现在打开并登录好的浏览器完成网页研究；遇到登录、验证码、付款、发布或发送动作时停下来问我。
+不要启动新的 Chrome。使用我现在打开并登录好的浏览器完成网页研究；不要超出本次任务授权的范围。若我明确要求完成一条包含发布、提交或发送的端到端流程，该请求覆盖流程内所需操作，无需逐步确认。遇到验证码、账号安全验证或必须由账号持有人现场完成的验证时再暂停。
 ```
 
 ## EasyBR 多开环境
 
 EasyBR 是可选的兼容集成场景。每个多开环境保留独立 Cookie、Local Storage 和账号登录态；Easy WebBridge 会识别环境名称、颜色和 `browserId`。这适合用户在自己已授权的多个账号环境中，分别完成后台检查、内容研究或上传准备。
 
-每次仍必须先确认目标账号和操作范围。发布、发送、支付、删除、账号安全修改等后果性动作必须得到用户当次明确授权。
+开始操作前确认一次目标账号和任务范围。用户明确要求完成端到端流程时，该任务授权覆盖流程内完成目标所必需的操作，包括创建、编辑、上传、发布和提交审核；不得因每个按钮或阶段再次要求确认。付款、删除、账号安全修改等动作仅在明确属于该任务范围时执行，不得扩展到任务之外。账号、对象或范围不明确，出现验证码/账号安全验证，或需要超出授权范围时才暂停并说明原因。对平台合规声明仍须根据应用、资料和可验证事实填写，不得编造。
 
 ## Connect
 
@@ -179,12 +180,58 @@ Read a semantic snapshot before interacting:
 node scripts/easy-webbridge.mjs snapshot <browserId> [tabId]
 ```
 
+For routine Agent work, prefer compact, scoped snapshots to reduce repeated page text and output tokens:
+
+```bash
+node scripts/easy-webbridge.mjs snapshot <browserId> [tabId] --compact --region viewport --max-elements 40
+```
+
+快照默认优先返回可见元素（最多 200 个），同时保留隐藏元素读取能力。复杂页面应尽量缩小范围，减少无关内容：
+
+```bash
+# 当前视口中的可见按钮，最多 30 个
+node scripts/easy-webbridge.mjs snapshot <browserId> [tabId] \
+  --visibility visible --region viewport --role button --max-elements 30 --text-mode matched
+
+# 指定弹窗内包含“保存”的按钮
+node scripts/easy-webbridge.mjs snapshot <browserId> [tabId] \
+  --scope '[role=dialog]' --text 保存 --role button
+
+# 排查隐藏控件；也可使用 all 同时返回可见和隐藏元素
+node scripts/easy-webbridge.mjs snapshot <browserId> [tabId] \
+  --visibility hidden --max-elements 50
+```
+
+可重复传入 `--text` 和 `--role`；用 `--offset` 分页。区域还支持 `--region x,y,width,height`。每次结果都有候选数、命中数、返回数和截断标记，不能把“只返回一部分”误判为“页面只有这些”。
+
 Use the returned `@e1`, `@e2` references for resilient interaction:
 
 ```bash
 node scripts/easy-webbridge.mjs click <browserId> @e3 [tabId]
 node scripts/easy-webbridge.mjs fill <browserId> @e4 "value" [tabId]
 ```
+
+If the target is inside an iframe, call `list_frames`, then pair the returned snapshot `frameId` with every action using its `@e` references. Frame IDs are temporary and must be refreshed after navigation. Cross-origin out-of-process frames may be listed but inaccessible to `chrome.scripting`; errors are explicit and this is not universal OOPIF support.
+
+```bash
+node scripts/easy-webbridge.mjs command <browserId> list_frames '{"tabId":123}'
+node scripts/easy-webbridge.mjs snapshot <browserId> 123 --frame-id 7 --compact
+node scripts/easy-webbridge.mjs click <browserId> @e2 123 --frame-id 7
+node scripts/easy-webbridge.mjs click <browserId> @e2 123 --mode native
+node scripts/easy-webbridge.mjs fill <browserId> @e3 "value" 123 --frame-id 7
+node scripts/easy-webbridge.mjs wait <browserId> 123 --selector '[role=dialog]' --state visible --timeout-ms 10000 --frame-id 7
+node scripts/easy-webbridge.mjs capabilities <browserId>
+```
+
+对于连续的确定性页面动作，可用有限 batch 减少往返：
+
+```bash
+node scripts/easy-webbridge.mjs batch <browserId> '{"tabId":123,"maxDurationMs":30000,"actions":[{"action":"fill","args":{"selector":"@e1","value":"text"}},{"action":"click","args":{"selector":"@e2"},"assert":{"selector":"[role=dialog]","state":"visible","timeoutMs":5000}}]}'
+```
+
+batch 最多 20 步，只允许 `click`、`fill`、`scroll`、`wait_for`，每步仍执行唯一性/可操作性检查；断言失败会带出步骤索引。快照可传 `--max-bytes`，通用命令可在 `args.resultBudget` 中设置有限结果预算，超限对象只返回结构摘要。不要把 batch 当作跳过状态回读或授权检查的快捷方式。
+
+The optional native click is a paired CDP mouse press/release with hit-test validation and supports the top frame only; DOM click remains the default. The permission diagnostic reports declared and currently granted permissions without requesting any. Existing access is broad and powerful. Open Shadow DOM is traversable; closed roots are not. DOM click/fill are not trusted native input. CAPTCHA and account-security challenges are not bypassed; CDP upload remains top-frame-only and rejects non-zero `frameId` explicitly. OOPIF discovery may succeed while script injection remains unavailable.
 
 Take a screenshot when visual state matters:
 
@@ -211,6 +258,7 @@ Supported actions include:
 - `get_cookies`, `set_cookie`, `remove_cookie`
 - `download` with Chrome download options
 - `reload_extension` to reload Easy WebBridge in the selected browser profile
+- `extension_identity` and `extension_message` for integrations with extensions that explicitly trust Easy WebBridge
 - `network` with `start`, `stop`, `list` and `detail`
 - `save_as_pdf` to render a page to a local PDF file
 
@@ -232,7 +280,7 @@ Use this contract for independent browser business repositories:
 3. Select exactly one online browser and keep that `browserId` for the run.
 4. Create one namespaced task session, reuse its tab, group any necessary extra tabs, and close only that session in `finally`.
 5. Keep tokens, cookies, browser IDs, session state, and account data out of generated artifacts.
-6. Stop on login, CAPTCHA, payment, publishing, deletion, or other consequential gates unless the user explicitly authorizes the action.
+6. Stop on login, CAPTCHA, or account-security verification. For payment, publishing, deletion, or other consequential actions, a clear user authorization for the end-to-end task covers the necessary in-scope steps; do not ask for confirmation again at each gate. Pause only if the target, scope, or action is unclear or the next action falls outside that authorization.
 
 For full payload shapes, read [references/api.md](references/api.md).
 
@@ -240,10 +288,11 @@ For full payload shapes, read [references/api.md](references/api.md).
 
 - Treat the extension as full browser access: it can read authenticated pages, cookies and downloads.
 - Never print bridge tokens, cookies, passwords, session values or personal data into chat or logs.
-- Require explicit user authorization before purchases, publishing, deleting data, sending messages, changing account security or other consequential actions.
+- Treat the user's explicit authorization as the controlling permission for the requested task. When the user authorizes an end-to-end task, that authorization covers consequential actions necessary to complete it, including publishing or submission; do not require separate confirmation for each step. Never extend it to unrelated targets or actions. Pause only for an unclear target/scope, an action outside the authorized task, CAPTCHA/access controls, or account-security verification.
 - Do not bypass CAPTCHAs, access controls or platform protections.
 - Re-snapshot after navigation or major DOM changes because element references may change.
 - Report actual command results. Do not equate a click with a completed submission unless the resulting page confirms it.
+- Follow-up candidates for later releases: semantic locators and stale-reference detection, general post-action diff readback beyond batch assertions, structured traces, keyboard/select/form primitives, and narrower per-domain permissions. These are not current capabilities.
 
 ## 某些特殊流程
 

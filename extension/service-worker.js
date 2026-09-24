@@ -1,4 +1,8 @@
 import { easyBrProfileId, identityColor } from "./identity.js";
+import { frameResult, publicFrames, scriptResult, scriptTarget } from "./frame-utils.js";
+import { snapshotDocument } from "./snapshot-document.js";
+import { normalizeSnapshotOptions } from "./snapshot-options.js";
+import { waitForDocument } from "./wait-document.js";
 
 const DEFAULTS = {
   endpoint: "ws://127.0.0.1:17777/extension",
@@ -353,44 +357,66 @@ function selectorFromRef(selector) {
   return `[data-agent-bridge-ref="${ref}"]`;
 }
 
-function snapshotDocument(options) {
-  const maxTextLength = Number(options.maxTextLength || 100_000);
-  const elements = [...document.querySelectorAll("a,button,input,textarea,select,[contenteditable='true'],[role='button'],[role='link'],[tabindex]")];
-  const interactive = elements.map((element, index) => {
-    const ref = `e${index + 1}`;
-    element.setAttribute("data-agent-bridge-ref", ref);
-    const rect = element.getBoundingClientRect();
-    return {
-      ref: `@${ref}`,
-      tag: element.tagName.toLowerCase(),
-      role: element.getAttribute("role") || "",
-      type: element.getAttribute("type") || "",
-      text: (element.innerText || element.getAttribute("aria-label") || element.getAttribute("placeholder") || "").trim().slice(0, 500),
-      value: "value" in element ? String(element.value || "").slice(0, 500) : "",
-      href: element.href || "",
-      visible: rect.width > 0 && rect.height > 0,
-      disabled: Boolean(element.disabled),
-    };
-  });
-  return {
-    title: document.title,
-    url: location.href,
-    text: (document.body?.innerText || "").slice(0, maxTextLength),
-    interactive,
-  };
-}
-
 function clickElement(selector) {
-  const element = document.querySelector(selector);
-  if (!element) throw new Error(`Element not found: ${selector}`);
+  const queryOpenRoots = (root, query, found = []) => {
+    found.push(...root.querySelectorAll(query));
+    for (const host of root.querySelectorAll("*")) {
+      if (host.shadowRoot) queryOpenRoots(host.shadowRoot, query, found);
+    }
+    return found;
+  };
+  const matches = queryOpenRoots(document, selector);
+  if (!matches.length) throw new Error(`Element not found: ${selector}`);
+  if (matches.length > 1) throw new Error(`Selector matched ${matches.length} elements; use a unique selector or snapshot @e reference`);
+  const [element] = matches;
   element.scrollIntoView({ block: "center", inline: "center" });
   element.click();
   return { tag: element.tagName.toLowerCase(), text: (element.innerText || element.getAttribute("aria-label") || "").trim().slice(0, 500) };
 }
 
+function elementCenter(selector) {
+  const queryOpenRoots = (root, query, found = []) => {
+    found.push(...root.querySelectorAll(query));
+    for (const host of root.querySelectorAll("*")) if (host.shadowRoot) queryOpenRoots(host.shadowRoot, query, found);
+    return found;
+  };
+  const matches = queryOpenRoots(document, selector);
+  if (!matches.length) throw new Error(`Element not found: ${selector}`);
+  if (matches.length !== 1) throw new Error(`Selector matched ${matches.length} elements; use a unique selector or snapshot @e reference`);
+  const rect = matches[0].getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) throw new Error("Native click target has no visible bounds");
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) throw new Error("Native click target is outside the current viewport");
+  const root = matches[0].getRootNode();
+  const hitTestRoot = root === document ? document : root;
+  if (typeof hitTestRoot.elementFromPoint !== "function") throw new Error("Native click cannot hit-test this Shadow DOM root safely");
+  const top = hitTestRoot.elementFromPoint(x, y);
+  let hitIsTarget = top === matches[0] || matches[0].contains(top);
+  let ancestor = matches[0];
+  while (!hitIsTarget && ancestor) {
+    const root = ancestor.getRootNode?.();
+    ancestor = root?.host || ancestor.parentElement;
+    hitIsTarget = ancestor === top;
+  }
+  if (!top || !hitIsTarget) {
+    throw new Error("Native click target is covered or cannot be hit-tested safely");
+  }
+  return { x, y, tag: matches[0].tagName.toLowerCase(), text: (matches[0].innerText || matches[0].getAttribute("aria-label") || "").trim().slice(0, 500) };
+}
+
 function fillElement(selector, value) {
-  const element = document.querySelector(selector);
-  if (!element) throw new Error(`Element not found: ${selector}`);
+  const queryOpenRoots = (root, query, found = []) => {
+    found.push(...root.querySelectorAll(query));
+    for (const host of root.querySelectorAll("*")) {
+      if (host.shadowRoot) queryOpenRoots(host.shadowRoot, query, found);
+    }
+    return found;
+  };
+  const matches = queryOpenRoots(document, selector);
+  if (!matches.length) throw new Error(`Element not found: ${selector}`);
+  if (matches.length > 1) throw new Error(`Selector matched ${matches.length} elements; use a unique selector or snapshot @e reference`);
+  const [element] = matches;
   element.focus();
   if (element.isContentEditable) {
     element.textContent = value;
@@ -411,6 +437,51 @@ function scrollPage(options) {
   return { x: window.scrollX, y: window.scrollY };
 }
 
+const KEY_DEFINITIONS = {
+  ENTER: ["Enter", "Enter", 13], TAB: ["Tab", "Tab", 9], ESC: ["Escape", "Escape", 27], ESCAPE: ["Escape", "Escape", 27], SPACE: [" ", "Space", 32], BACKSPACE: ["Backspace", "Backspace", 8], DELETE: ["Delete", "Delete", 46], ARROWUP: ["ArrowUp", "ArrowUp", 38], ARROWDOWN: ["ArrowDown", "ArrowDown", 40], ARROWLEFT: ["ArrowLeft", "ArrowLeft", 37], ARROWRIGHT: ["ArrowRight", "ArrowRight", 39], HOME: ["Home", "Home", 36], END: ["End", "End", 35], PAGEUP: ["PageUp", "PageUp", 33], PAGEDOWN: ["PageDown", "PageDown", 34], INSERT: ["Insert", "Insert", 45],
+};
+const MODIFIER_BITS = { ALT: 1, CONTROL: 2, CTRL: 2, META: 4, COMMAND: 4, SHIFT: 8 };
+
+function keyDefinition(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw.length > 20) throw new Error("key names must be non-empty and at most 20 characters");
+  const upper = raw.toUpperCase();
+  if (MODIFIER_BITS[upper]) {
+    const modifierName = upper === "CTRL" ? "Control" : ["META", "COMMAND"].includes(upper) ? "Meta" : upper[0] + upper.slice(1).toLowerCase();
+    return { key: modifierName, code: `${modifierName}Left`, keyCode: 0, modifier: MODIFIER_BITS[upper] };
+  }
+  if (KEY_DEFINITIONS[upper]) { const [key, code, keyCode] = KEY_DEFINITIONS[upper]; return { key, code, keyCode, modifier: 0 }; }
+  if (/^[a-z]$/i.test(raw)) return { key: raw.toLowerCase(), code: `Key${raw.toUpperCase()}`, keyCode: raw.toUpperCase().charCodeAt(0), modifier: 0 };
+  if (/^[0-9]$/.test(raw)) return { key: raw, code: `Digit${raw}`, keyCode: Number(raw) + 48, modifier: 0 };
+  if (/^F(?:[1-9]|1[0-2])$/i.test(raw)) { const number = Number(raw.slice(1)); return { key: `F${number}`, code: `F${number}`, keyCode: 111 + number, modifier: 0 }; }
+  throw new Error(`Unsupported key: ${raw}`);
+}
+
+async function dispatchKey(tabId, definition, type, modifiers) {
+  return cdp(tabId, "Input.dispatchKeyEvent", { type, key: definition.key, code: definition.code, windowsVirtualKeyCode: definition.keyCode, nativeVirtualKeyCode: definition.keyCode, modifiers });
+}
+
+async function pressKey(tabId, args) {
+  const definition = keyDefinition(args.key);
+  const modifiers = Number(args.modifiers || 0) | definition.modifier;
+  if (!Number.isInteger(modifiers) || modifiers < 0 || modifiers > 15) throw new Error("modifiers must be a bitmask from 0 to 15");
+  await dispatchKey(tabId, definition, "keyDown", modifiers);
+  await dispatchKey(tabId, definition, "keyUp", modifiers);
+  return { key: definition.key, code: definition.code, modifiers };
+}
+
+async function keyCombo(tabId, args) {
+  const definitions = args.keys.map(keyDefinition);
+  const modifiers = definitions.reduce((mask, definition) => mask | definition.modifier, 0);
+  const primary = definitions.find((definition) => !definition.modifier);
+  if (!primary) throw new Error("key_combo requires a non-modifier key");
+  for (const definition of definitions.filter((item) => item.modifier)) await dispatchKey(tabId, definition, "keyDown", modifiers);
+  await dispatchKey(tabId, primary, "keyDown", modifiers);
+  await dispatchKey(tabId, primary, "keyUp", modifiers);
+  for (const definition of definitions.filter((item) => item.modifier).reverse()) await dispatchKey(tabId, definition, "keyUp", modifiers);
+  return { keys: definitions.map((definition) => definition.key), modifiers };
+}
+
 async function evaluateCode(code) {
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   try {
@@ -421,9 +492,100 @@ async function evaluateCode(code) {
   }
 }
 
-async function executeScript(tabId, func, args = [], world = "ISOLATED") {
-  const [{ result }] = await chrome.scripting.executeScript({ target: { tabId }, func, args, world });
-  return result;
+function environmentInfo() {
+  const screenInfo = typeof screen === "undefined" ? null : {
+    width: Number(screen.width || 0),
+    height: Number(screen.height || 0),
+    availWidth: Number(screen.availWidth || 0),
+    availHeight: Number(screen.availHeight || 0),
+    colorDepth: Number(screen.colorDepth || 0),
+    pixelDepth: Number(screen.pixelDepth || 0),
+    devicePixelRatio: Number(globalThis.devicePixelRatio || 1),
+  };
+  let timezone = "";
+  try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { /* unavailable */ }
+  return {
+    mutated: false,
+    source: "browser-runtime",
+    userAgent: String(navigator.userAgent || ""),
+    platform: String(navigator.platform || ""),
+    language: String(navigator.language || ""),
+    languages: Array.isArray(navigator.languages) ? navigator.languages.map(String).slice(0, 20) : [],
+    timezone,
+    hardwareConcurrency: Number.isFinite(navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : null,
+    ...(Number.isFinite(navigator.deviceMemory) ? { deviceMemory: navigator.deviceMemory } : {}),
+    screen: screenInfo,
+    webdriver: Boolean(navigator.webdriver),
+  };
+}
+
+async function executeScript(tabId, func, args = [], world = "ISOLATED", frameId) {
+  const results = await chrome.scripting.executeScript({ target: scriptTarget(tabId, frameId), func, args, world });
+  return scriptResult(results);
+}
+
+async function waitFor(tabId, args) {
+  const state = String(args.state || "visible");
+  if (!["attached", "detached", "visible", "hidden"].includes(state)) throw new Error("state must be attached, detached, visible or hidden");
+  const selector = args.selector == null ? "" : String(args.selector);
+  const text = args.text == null ? "" : String(args.text);
+  const url = args.url == null ? "" : String(args.url);
+  if ([selector, text, url].filter(Boolean).length !== 1) throw new Error("Provide exactly one of selector, text or url");
+  const timeoutMs = Number(args.timeoutMs ?? 10_000);
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) throw new Error("timeoutMs must be between 100 and 30000");
+  const started = Date.now();
+  while (Date.now() - started <= timeoutMs) {
+    try {
+      if (await executeScript(tabId, waitForDocument, [{ selector, text, url, state }], "ISOLATED", args.frameId)) {
+        return { state, matched: true, elapsedMs: Date.now() - started, frameId: args.frameId ?? 0 };
+      }
+    } catch (error) {
+      if (!String(error.message).includes("No frame was injected")) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Timed out waiting for ${state} ${selector || text || url}`);
+}
+
+function assertionArgs(assertion) {
+  if (!assertion) return null;
+  const allowed = ["selector", "text", "url"].filter((key) => assertion[key] != null && String(assertion[key]) !== "");
+  if (allowed.length !== 1) throw new Error("assert must provide exactly one of selector, text or url");
+  const state = assertion.state || "visible";
+  const timeoutMs = Number(assertion.timeoutMs ?? 5_000);
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) throw new Error("assert.timeoutMs must be between 100 and 30000");
+  return { ...assertion, state, timeoutMs };
+}
+
+async function executeBatch(args) {
+  const actions = Array.isArray(args.actions) ? args.actions : [];
+  if (!actions.length || actions.length > 20) throw new Error("batch.actions must contain 1 to 20 actions");
+  const startedAt = Date.now();
+  const maxDurationMs = Number(args.maxDurationMs ?? 30_000);
+  if (!Number.isSafeInteger(maxDurationMs) || maxDurationMs < 500 || maxDurationMs > 120_000) throw new Error("batch.maxDurationMs must be an integer between 500 and 120000");
+  const results = [];
+  for (let index = 0; index < actions.length; index += 1) {
+    const step = actions[index];
+    if (Date.now() - startedAt > maxDurationMs) throw new Error(`batch action ${index} exceeded maxDurationMs ${maxDurationMs}`);
+    if (!step || !["click", "fill", "scroll", "wait_for", "press_key", "key_combo"].includes(step.action)) throw new Error(`batch action ${index} is not supported`);
+    const stepArgs = { ...(step.args || {}) };
+    if (stepArgs.tabId == null && args.tabId != null) stepArgs.tabId = args.tabId;
+    let result;
+    try {
+      result = await executeCommand(step.action, stepArgs);
+      const assertion = assertionArgs(step.assert);
+      if (assertion) {
+        const tab = await activeTab(stepArgs);
+        await waitFor(tab.id, { ...assertion, frameId: assertion.frameId ?? stepArgs.frameId });
+      }
+    } catch (error) {
+      const wrapped = new Error(`batch action ${index} (${step.action}) failed: ${error.message}`);
+      wrapped.batchIndex = index;
+      throw wrapped;
+    }
+    results.push({ index, action: step.action, result, ...(step.assert ? { asserted: true } : {}) });
+  }
+  return { count: results.length, results };
 }
 
 async function attachDebugger(tabId) {
@@ -602,10 +764,57 @@ async function saveAsPdf(tab, args) {
 }
 
 async function executeCommand(action, args) {
+  if (action === "capabilities") {
+    let permissions = null;
+    let diagnosticError = null;
+    try {
+      permissions = await chrome.permissions.getAll();
+    } catch (error) {
+      diagnosticError = String(error.message || error);
+    }
+    const manifest = chrome.runtime.getManifest();
+    return {
+      extensionVersion: manifest.version,
+      permissions: {
+        declared: manifest.permissions || [],
+        granted: permissions?.permissions || [],
+        declaredHosts: manifest.host_permissions || [],
+        grantedHosts: permissions?.origins || [],
+        diagnosticError,
+      },
+      features: {
+        domSnapshot: "open shadow roots; closed shadow roots are inaccessible",
+        frameTargeting: "frameId on snapshot, click, fill, scroll, evaluate and wait_for",
+        interaction: "DOM-backed click and value/input-event fill; not trusted native input",
+        fileUpload: "CDP file input only; iframe-targeted uploads are unsupported",
+        oopif: "frame discovery is available; cross-origin OOPIF script injection and file upload are not guaranteed",
+        batch: "bounded click/fill/scroll/wait_for/press_key/key_combo sequences with optional post-action assertions",
+        keyboardInput: "normal CDP key events for common keys; no fingerprint or CAPTCHA evasion",
+        browserProfile: {
+          mode: "selected-profile",
+          configurableByBridge: false,
+          stable: true,
+          managedBy: "browser or EasyBR profile settings",
+          bridgeDoesNotModify: ["navigator.webdriver", "Canvas", "WebGL", "Audio", "user agent", "timezone", "proxy or IP"],
+        },
+        environmentInfo: "read-only top-frame browser runtime diagnostics; no page text, cookies, tokens or overrides",
+        security: "does not bypass CAPTCHA, login challenges or site security controls",
+      },
+    };
+  }
   if (action === "reload_extension") {
     const extensionVersion = chrome.runtime.getManifest().version;
     setTimeout(() => chrome.runtime.reload(), 250);
     return { reloading: true, extensionVersion };
+  }
+  if (action === "extension_identity") {
+    return { extensionId: chrome.runtime.id, extensionVersion: chrome.runtime.getManifest().version };
+  }
+  if (action === "extension_message") {
+    const extensionId = String(args.extensionId || "").trim();
+    if (!/^[a-p]{32}$/.test(extensionId)) throw new Error("extensionId must be a 32-character Chrome extension ID");
+    if (!args.message || typeof args.message !== "object" || Array.isArray(args.message)) throw new Error("message must be a JSON object");
+    return chrome.runtime.sendMessage(extensionId, args.message);
   }
   if (action === "list_tabs") {
     const name = sessionName(args);
@@ -668,11 +877,62 @@ async function executeCommand(action, args) {
   if (action === "download") return { downloadId: await chrome.downloads.download(args) };
 
   const tab = await activeTab(args);
-  if (action === "snapshot") return executeScript(tab.id, snapshotDocument, [args]);
-  if (action === "click") return executeScript(tab.id, clickElement, [selectorFromRef(args.selector)]);
-  if (action === "fill") return executeScript(tab.id, fillElement, [selectorFromRef(args.selector), String(args.value ?? "")]);
-  if (action === "scroll") return executeScript(tab.id, scrollPage, [args]);
-  if (action === "evaluate") return executeScript(tab.id, evaluateCode, [String(args.code || "")], args.world === "ISOLATED" ? "ISOLATED" : "MAIN");
+  if (action === "batch") return executeBatch(args);
+  if (["environment_info", "browser_profile"].includes(action)) {
+    if (args.frameId != null && Number(args.frameId) !== 0) throw new Error("environment_info supports only the top frame");
+    return executeScript(tab.id, environmentInfo, [], "MAIN", 0);
+  }
+  if (action === "list_frames") {
+    let frames;
+    try {
+      frames = await chrome.webNavigation.getAllFrames({ tabId: tab.id });
+    } catch (error) {
+      throw new Error(`Unable to list frames for tab ${tab.id}: ${error.message}`);
+    }
+    if (!frames?.length) throw new Error(`No frames found for tab ${tab.id}`);
+    return publicFrames(frames);
+  }
+  if (action === "snapshot") {
+    const result = await executeScript(tab.id, snapshotDocument, [normalizeSnapshotOptions(args)], "ISOLATED", args.frameId);
+    return frameResult(result, args.frameId);
+  }
+  if (action === "click") {
+    const selector = selectorFromRef(args.selector);
+    if ((args.mode || "dom") === "native") {
+      if (args.frameId != null && args.frameId !== 0) throw new Error("Native click supports only the top frame; use DOM mode in a targeted frame");
+      const target = await executeScript(tab.id, elementCenter, [selector]);
+      const { x, y } = target;
+      let pressAttempted = false;
+      let commandFailed = false;
+      try {
+        pressAttempted = true;
+        await cdp(tab.id, "Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
+        return { mode: "native", ...target };
+      } catch (error) {
+        commandFailed = true;
+        throw error;
+      } finally {
+        if (pressAttempted) {
+          try {
+            await cdp(tab.id, "Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+          } catch (error) {
+            if (!commandFailed) throw error;
+          }
+        }
+      }
+    }
+    if ((args.mode || "dom") !== "dom") throw new Error("mode must be dom or native");
+    return executeScript(tab.id, clickElement, [selector], "ISOLATED", args.frameId);
+  }
+  if (action === "fill") return executeScript(tab.id, fillElement, [selectorFromRef(args.selector), String(args.value ?? "")], "ISOLATED", args.frameId);
+  if (action === "scroll") return executeScript(tab.id, scrollPage, [args], "ISOLATED", args.frameId);
+  if (action === "press_key") return pressKey(tab.id, args);
+  if (action === "key_combo") return keyCombo(tab.id, args);
+  if (action === "wait_for") return waitFor(tab.id, args);
+  if (action === "evaluate") {
+    if (Object.hasOwn(args, "frameId")) scriptTarget(tab.id, args.frameId);
+    return executeScript(tab.id, evaluateCode, [String(args.code || "")], args.world === "ISOLATED" ? "ISOLATED" : "MAIN", args.frameId);
+  }
   if (action === "screenshot") return captureScreenshot(tab, args);
   if (action === "save_as_pdf") return saveAsPdf(tab, args);
   if (action === "network") return networkCommand(tab, args);
@@ -682,6 +942,7 @@ async function executeCommand(action, args) {
   }
   if (action === "upload") {
     if (!args.selector || !Array.isArray(args.files) || !args.files.length) throw new Error("selector and files are required");
+    if (args.frameId != null && Number(args.frameId) !== 0) throw new Error("iframe/OOPIF file upload is unsupported; upload only targets the top frame");
     const documentNode = await cdp(tab.id, "DOM.getDocument", { depth: 0, pierce: true });
     const node = await cdp(tab.id, "DOM.querySelector", { nodeId: documentNode.root.nodeId, selector: args.selector });
     if (!node.nodeId) throw new Error(`File input not found: ${args.selector}`);

@@ -55,10 +55,86 @@ function usage() {
   easy-webbridge status
   easy-webbridge command <browserId> <action> [args-json]
   easy-webbridge navigate <browserId> <url> [--new-tab] [--session <name>] [--group-title <title>] [--ungrouped]
-  easy-webbridge snapshot <browserId> [tabId]
-  easy-webbridge click <browserId> <selector> [tabId]
-  easy-webbridge fill <browserId> <selector> <value> [tabId]
+  easy-webbridge snapshot <browserId> [tabId] [--frame-id <id>] [--compact] [--visibility visible|hidden|all] [--scope <css>] [--region viewport|x,y,width,height] [--max-elements <n>] [--offset <n>] [--text <query>] [--role <role>] [--text-mode page|matched|none] [--max-text-length <n>] [--max-bytes <n>]
+  easy-webbridge click <browserId> <selector> [tabId] [--frame-id <id>] [--mode dom|native]
+  easy-webbridge fill <browserId> <selector> <value> [tabId] [--frame-id <id>]
+  easy-webbridge wait <browserId> [tabId] (--selector <css>|--text <text>|--url <part>) [--state attached|detached|visible|hidden] [--timeout-ms <n>] [--frame-id <id>]
+  easy-webbridge batch <browserId> <actions-json> [tabId]
+  easy-webbridge press-key <browserId> <key> [tabId]
+  easy-webbridge key-combo <browserId> <keys-json> [tabId]
+  easy-webbridge environment-info <browserId> [tabId]
+  easy-webbridge capabilities <browserId>
   easy-webbridge screenshot <browserId> [tabId]`);
+}
+
+function snapshotArgs(args) {
+  const [browserId, ...tokens] = args;
+  if (!browserId) throw new Error("browserId is required");
+  const options = {};
+  if (tokens[0] && !tokens[0].startsWith("--")) {
+    const tabId = Number(tokens.shift());
+    if (!Number.isSafeInteger(tabId)) throw new Error("tabId must be an integer");
+    options.tabId = tabId;
+  }
+  const repeated = { "--text": "text", "--role": "roles" };
+  const scalar = {
+    "--visibility": "visibility",
+    "--scope": "scopeSelector",
+    "--max-elements": "maxElements",
+    "--offset": "offset",
+    "--text-mode": "textMode",
+    "--max-text-length": "maxTextLength",
+    "--max-bytes": "maxBytes",
+    "--frame-id": "frameId",
+  };
+  while (tokens.length) {
+    const flag = tokens.shift();
+    if (flag === "--compact") {
+      options.compact = true;
+      continue;
+    }
+    if (flag === "--include-hidden") {
+      options.visibility = "all";
+      continue;
+    }
+    const value = tokens.shift();
+    if (value === undefined || value.startsWith("--")) throw new Error(`${flag} requires a value`);
+    if (flag === "--region") {
+      if (value === "viewport") options.region = "viewport";
+      else {
+        const values = value.split(",").map(Number);
+        if (values.length !== 4 || !values.every(Number.isFinite)) throw new Error("--region requires viewport or x,y,width,height");
+        options.region = { x: values[0], y: values[1], width: values[2], height: values[3] };
+      }
+    } else if (repeated[flag]) {
+      (options[repeated[flag]] ||= []).push(value);
+    } else if (scalar[flag]) {
+      options[scalar[flag]] = ["maxElements", "offset", "maxTextLength", "maxBytes", "frameId"].includes(scalar[flag]) ? Number(value) : value;
+    } else {
+      throw new Error(`Unknown snapshot option: ${flag}`);
+    }
+  }
+  return { browserId, options };
+}
+
+function actionArgs(tokens, positionalCount, flags = {}) {
+  const result = {};
+  let index = 0;
+  if (positionalCount && tokens[0] && !tokens[0].startsWith("--")) {
+    const tabId = Number(tokens[0]);
+    if (!Number.isSafeInteger(tabId)) throw new Error("tabId must be an integer");
+    result.tabId = tabId;
+    index = 1;
+  }
+  for (; index < tokens.length; index += 1) {
+    const flag = tokens[index];
+    const key = flags[flag];
+    if (!key) throw new Error(`Unknown option: ${flag}`);
+    const value = tokens[++index];
+    if (value == null || value.startsWith("--")) throw new Error(`${flag} requires a value`);
+    result[key] = key === "frameId" || key === "timeoutMs" ? Number(value) : value;
+  }
+  return result;
 }
 
 function navigateArgs(url, flags) {
@@ -83,10 +159,10 @@ function navigateArgs(url, flags) {
   return options;
 }
 
-async function command(browserId, action, args = {}) {
+async function command(browserId, action, args = {}, timeoutMs = 15_000) {
   return request(`/v1/browsers/${encodeURIComponent(browserId)}/commands`, {
     method: "POST",
-    body: JSON.stringify({ action, args }),
+    body: JSON.stringify({ action, args, timeoutMs }),
   });
 }
 
@@ -107,18 +183,48 @@ async function main() {
     const [browserId, url, ...flags] = args;
     if (!browserId || !url) throw new Error("browserId and url are required");
     result = await command(browserId, "navigate", navigateArgs(url, flags));
-  } else if (["snapshot", "screenshot"].includes(verb)) {
+  } else if (verb === "snapshot") {
+    const parsed = snapshotArgs(args);
+    result = await command(parsed.browserId, "snapshot", parsed.options);
+  } else if (verb === "screenshot") {
     const [browserId, tabId] = args;
     if (!browserId) throw new Error("browserId is required");
     result = await command(browserId, verb, tabId ? { tabId: Number(tabId) } : {});
   } else if (verb === "click") {
-    const [browserId, selector, tabId] = args;
+    const [browserId, selector, ...tail] = args;
     if (!browserId || !selector) throw new Error("browserId and selector are required");
-    result = await command(browserId, "click", { selector, ...(tabId ? { tabId: Number(tabId) } : {}) });
+    result = await command(browserId, "click", { selector, ...actionArgs(tail, 1, { "--frame-id": "frameId", "--mode": "mode" }) });
   } else if (verb === "fill") {
-    const [browserId, selector, value, tabId] = args;
+    const [browserId, selector, value, ...tail] = args;
     if (!browserId || !selector || value == null) throw new Error("browserId, selector and value are required");
-    result = await command(browserId, "fill", { selector, value, ...(tabId ? { tabId: Number(tabId) } : {}) });
+    result = await command(browserId, "fill", { selector, value, ...actionArgs(tail, 1, { "--frame-id": "frameId" }) });
+  } else if (verb === "wait") {
+    const [browserId, ...tail] = args;
+    if (!browserId) throw new Error("browserId is required");
+    const options = actionArgs(tail, 1, { "--frame-id": "frameId", "--selector": "selector", "--text": "text", "--url": "url", "--state": "state", "--timeout-ms": "timeoutMs" });
+    result = await command(browserId, "wait_for", options, Math.min(120_000, (options.timeoutMs || 10_000) + 2_000));
+  } else if (verb === "batch") {
+    const [browserId, actionsJson, tabId] = args;
+    if (!browserId || !actionsJson) throw new Error("browserId and actions-json are required");
+    const options = JSON.parse(actionsJson);
+    if (tabId != null) options.tabId = Number(tabId);
+    result = await command(browserId, "batch", options, Math.min(120_000, Number(options.maxDurationMs || 30_000) + 2_000));
+  } else if (verb === "press-key") {
+    const [browserId, key, tabId] = args;
+    if (!browserId || !key) throw new Error("browserId and key are required");
+    result = await command(browserId, "press_key", { key, ...(tabId == null ? {} : { tabId: Number(tabId) }) });
+  } else if (verb === "key-combo") {
+    const [browserId, keysJson, tabId] = args;
+    if (!browserId || !keysJson) throw new Error("browserId and keys-json are required");
+    result = await command(browserId, "key_combo", { keys: JSON.parse(keysJson), ...(tabId == null ? {} : { tabId: Number(tabId) }) });
+  } else if (verb === "environment-info") {
+    const [browserId, tabId] = args;
+    if (!browserId) throw new Error("browserId is required");
+    result = await command(browserId, "environment_info", tabId == null ? {} : { tabId: Number(tabId) });
+  } else if (verb === "capabilities") {
+    const [browserId] = args;
+    if (!browserId) throw new Error("browserId is required");
+    result = await command(browserId, "capabilities", {});
   } else {
     usage();
     process.exitCode = 2;

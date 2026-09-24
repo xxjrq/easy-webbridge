@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
 import { BrowserRegistry } from "./registry.mjs";
-import { isExtensionOrigin, normalizeCommand } from "./protocol.mjs";
+import { isExtensionOrigin, normalizeCommand, summarizeResult } from "./protocol.mjs";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 17_777;
@@ -51,6 +51,16 @@ async function loadOrCreateToken(dataDir) {
 function bearerToken(request) {
   const header = String(request.headers.authorization || "");
   return header.startsWith("Bearer ") ? header.slice(7) : "";
+}
+
+function applyResultBudget(result, budget) {
+  if (!budget) return result;
+  const bytes = Buffer.byteLength(JSON.stringify(result));
+  if (bytes <= budget.maxBytes) return result;
+  if (budget.mode === "truncate" && typeof result === "string") {
+    return { value: result.slice(0, Math.max(0, budget.maxBytes - 120)), truncated: true, originalBytes: bytes };
+  }
+  return { ...summarizeResult(result), truncated: true, originalBytes: bytes, maxBytes: budget.maxBytes };
 }
 
 async function persistArtifact(result, dataDir, browserId, action) {
@@ -111,7 +121,7 @@ export async function createBridgeServer(options = {}) {
         const result = ["screenshot", "save_as_pdf"].includes(command.action)
           ? await persistArtifact(rawResult, dataDir, browserId, command.action)
           : rawResult;
-        return json(response, 200, { ok: true, browserId, action: command.action, result });
+        return json(response, 200, { ok: true, browserId, action: command.action, result: applyResultBudget(result, command.args.resultBudget) });
       }
 
       return json(response, 404, { ok: false, error: "Not found" });
